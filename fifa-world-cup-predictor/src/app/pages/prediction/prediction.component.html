@@ -1,0 +1,103 @@
+<main class="page world-cup-page">
+  <section class="panel world-cup-panel">
+    <header class="hero">
+      <p class="tournament-eyebrow">Road To The Final 2026</p>
+      <h1 class="title">FIFA World Cup Predictor</h1>
+      <p class="subtitle">Pick a match, run the model by clicking the "Predict result" button, and see the Open AI expected result.</p>
+    </header>
+
+    <section class="status-stack" aria-live="polite">
+      <p class="message loading" *ngIf="isCheckingAuth && authStatusMessage">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>{{ authStatusMessage }}</span>
+      </p>
+      <p class="message success" *ngIf="!isCheckingAuth && isAuthenticated && authStatusMessage">{{ authStatusMessage }}</p>
+      <p class="message error" *ngIf="!isCheckingAuth && !isAuthenticated && authStatusMessage">{{ authStatusMessage }}</p>
+      <div class="row" *ngIf="!isCheckingAuth && !isAuthenticated">
+        <button class="button" type="button" (click)="goToLogin()">Go to Login</button>
+      </div>
+      <p class="message loading" *ngIf="isLoadingMatches">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Loading matches from backend...</span>
+      </p>
+      <p class="message error" *ngIf="matchesError">{{ matchesError }}</p>
+    </section>
+
+    <form
+      class="prediction-form"
+      [formGroup]="predictionForm"
+      (ngSubmit)="onSubmit()"
+      *ngIf="!isLoadingMatches && !matchesError && !requiresLogin"
+    >
+      <div class="form-header">
+        <h2 class="form-title">Match Selector</h2>
+      </div>
+
+      <div class="field">
+        <select id="matchSelect" class="select" formControlName="matchIndex" [disabled]="!canPredict">
+          <option value="" disabled selected>Select a match</option>
+          <option *ngFor="let match of matches; let index = index" [value]="index">
+            {{ formatMatchOption(match) }}
+          </option>
+        </select>
+      </div>
+
+      <p class="message error" *ngIf="isMatchMissing || formError">{{ formError || 'Please select a match.' }}</p>
+      <p class="message error" *ngIf="predictionError">{{ predictionError }}</p>
+
+      <div class="row">
+        <button class="button" type="submit" [disabled]="!canPredict">
+          {{ isPredicting ? 'Predicting...' : 'Predict Result' }}
+        </button>
+      </div>
+
+      <div class="prediction-overlay" *ngIf="isPredicting" aria-live="polite" aria-busy="true">
+        <span class="spinner spinner-large" aria-hidden="true"></span>
+        <span>Running simulation...</span>
+      </div>
+    </form>
+
+    <p class="message error" *ngIf="requiresLogin">
+      Please
+      <a class="login-link" routerLink="/login">go to the login page</a>
+      to continue.
+    </p>
+
+    <article class="result-card" *ngIf="prediction && !requiresLogin">
+      <h2 class="result-title">Predicted Outcome</h2>
+
+      <div class="scoreboard" aria-label="Predicted match scoreboard">
+        <div class="team-pill">
+          <span class="team-badge" aria-hidden="true">{{ getTeamInitials(prediction.homeTeam) }}</span>
+          <span class="team-name">{{ prediction.homeTeam }}</span>
+        </div>
+        <p class="scoreline">{{ prediction.predictedScore }}</p>
+        <div class="team-pill">
+          <span class="team-badge" aria-hidden="true">{{ getTeamInitials(prediction.awayTeam) }}</span>
+          <span class="team-name">{{ prediction.awayTeam }}</span>
+        </div>
+      </div>
+
+      <section class="bracket-panel" aria-label="World Cup bracket snapshot">
+        <div class="bracket-grid">
+          <p class="bracket-node"></p>
+          <p class="bracket-arrow" aria-hidden="true">></p>
+          <p class="bracket-node winner">{{ projectedWinner }}</p>
+          <p class="bracket-arrow" aria-hidden="true">></p>
+          <p class="bracket-node"></p>
+        </div>
+      </section>
+
+      <p><strong>Result:</strong> {{ prediction.result }}</p>
+      <p><strong>Explanation:</strong> {{ prediction.explanation }}</p>
+    </article>
+
+    <p class="photo-credit">
+      Stadium photo by
+      <a href="https://unsplash.com/photos/green-grass-field-near-stadium-under-blue-sky-during-daytime-XfACbY6B6Dc" target="_blank" rel="noreferrer">
+        Jules Marvin Eguilos
+      </a>
+      on Unsplash.
+    </p>
+  </section>
+</main>

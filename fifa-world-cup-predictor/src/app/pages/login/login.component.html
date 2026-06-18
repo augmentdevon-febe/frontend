@@ -1,0 +1,17 @@
+<main class="page">
+  <section class="panel">
+    <h1 class="title">FIFA World Cup Predictor</h1>
+    <p class="subtitle">
+      Login with Google to predict FIFA World Cup match results.
+    </p>
+
+    <div class="row">
+      <button type="button" class="button" (click)="startLogin()" [disabled]="isLoginInProgress">
+        Login with Google
+      </button>
+    </div>
+
+    <p class="message" *ngIf="isCheckingSession || isLoginInProgress">Checking your session...</p>
+    <p class="message error" *ngIf="loginError">{{ loginError }}</p>
+  </section>
+</main>
