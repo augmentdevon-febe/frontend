@@ -1,17 +1,116 @@
+/* ── Material token overrides for World Cup palette ─────── */
 :root {
-	--bg-top: #fff7e6;
-	--bg-bottom: #e6f4ff;
-	--surface: #ffffff;
-	--surface-border: #d7e3ef;
-	--text: #1e2a33;
-	--text-muted: #5a6b79;
-	--brand: #0f6cbf;
-	--brand-hover: #0a4f8d;
-	--success-bg: #edf9ef;
-	--success-border: #b7e2bd;
-	--danger-bg: #fff2f2;
-	--danger-border: #f2c4c4;
-	--shadow: 0 12px 30px rgba(22, 61, 97, 0.08);
+  --mat-sys-primary: #2e7d32;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #1b5e20;
+  --mat-sys-secondary: #f9a825;
+  --mat-sys-on-secondary: #1a1200;
+  --mat-sys-secondary-container: #f57f17;
+  --mat-sys-background: #04181f;
+  --mat-sys-surface: rgba(7, 28, 37, 0.9);
+  --mat-sys-on-surface: #ecfbff;
+  --mat-sys-error: #e57373;
+  --mat-sys-on-error: #ffffff;
+
+  /* raised button accent (amber) */
+  --mdc-filled-button-container-color: #f9a825;
+  --mdc-filled-button-label-text-color: #1a1200;
+
+  /* stroked button */
+  --mdc-outlined-button-label-text-color: #f9a825;
+  --mdc-outlined-button-outline-color: #f9a825;
+
+  /* progress spinner */
+  --mat-progress-spinner-active-indicator-color: #f9a825;
+
+  /* card background */
+  --mat-card-background-color: transparent;
+  --mdc-elevated-card-container-color: transparent;
+}
+
+/* ── Reset ───────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  color: #ecfbff;
+}
+
+body {
+  background: linear-gradient(145deg, #04181f, #0f4c3f 45%, #0f6452);
+}
+
+/* ── Layout helpers ──────────────────────────────────────── */
+.page {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.panel {
+  width: min(740px, 100%);
+  background: rgba(7, 28, 37, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 18px 54px rgba(1, 11, 16, 0.45);
+  color: #ecfbff;
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+}
+
+.subtitle {
+  margin: 0;
+  color: rgba(230, 246, 255, 0.9);
+  line-height: 1.5;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* ── Status messages ─────────────────────────────────────── */
+.message-error {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(113, 18, 34, 0.42);
+  border: 1px solid rgba(246, 165, 178, 0.5);
+  color: #ffd5db;
+  font-size: 0.92rem;
+}
+
+.message-info {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(9, 46, 60, 0.52);
+  border: 1px solid rgba(197, 232, 245, 0.35);
+  color: #ecfbff;
+  font-size: 0.92rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .panel {
+    padding: 22px;
+  }
 }
 
 * {
@@ -22,12 +121,12 @@ html,
 body {
 	margin: 0;
 	min-height: 100%;
-	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-	color: var(--text);
+	font-family: Roboto, 'Helvetica Neue', sans-serif;
+	color: #ecfbff;
 }
 
 body {
-	background: linear-gradient(150deg, var(--bg-top), var(--bg-bottom));
+	background: linear-gradient(145deg, #04181f, #0f4c3f 45%, #0f6452);
 }
 
 .page {
@@ -40,11 +139,12 @@ body {
 
 .panel {
 	width: min(740px, 100%);
-	background: var(--surface);
-	border: 1px solid var(--surface-border);
+	background: rgba(7, 28, 37, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.42);
 	border-radius: 16px;
 	padding: 28px;
-	box-shadow: var(--shadow);
+	box-shadow: 0 18px 54px rgba(1, 11, 16, 0.45);
+	color: #ecfbff;
 }
 
 .title {
@@ -54,83 +154,39 @@ body {
 
 .subtitle {
 	margin: 0;
-	color: var(--text-muted);
+	color: rgba(230, 246, 255, 0.9);
 	line-height: 1.5;
 }
 
 .row {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	gap: 12px;
 	margin-top: 20px;
 }
 
-.button {
-	border: none;
-	border-radius: 10px;
-	background: var(--brand);
-	color: #fff;
-	padding: 10px 16px;
-	font-size: 1rem;
-	cursor: pointer;
-	transition: background-color 0.2s ease;
+.message-error {
+	margin-top: 10px;
+	padding: 10px 14px;
+	border-radius: 8px;
+	background: rgba(113, 18, 34, 0.42);
+	border: 1px solid rgba(246, 165, 178, 0.5);
+	color: #ffd5db;
+	font-size: 0.92rem;
 }
 
-.button:hover {
-	background: var(--brand-hover);
-}
-
-.button:disabled {
-	background: #9ebcda;
-	cursor: not-allowed;
-}
-
-.field {
-	margin-top: 18px;
-}
-
-.label {
-	display: block;
-	margin-bottom: 8px;
-	font-weight: 600;
-}
-
-.select {
-	width: 100%;
-	border: 1px solid #b8cddd;
-	border-radius: 10px;
-	background: #fff;
-	padding: 10px;
-	font-size: 1rem;
-}
-
-.message {
-	margin-top: 12px;
-	border-radius: 10px;
-	border: 1px solid transparent;
-	padding: 10px 12px;
-}
-
-.message.error {
-	background: var(--danger-bg);
-	border-color: var(--danger-border);
-}
-
-.message.success {
-	background: var(--success-bg);
-	border-color: var(--success-border);
-}
-
-.result-card {
-	margin-top: 20px;
-	border: 1px solid #cbdbe8;
-	border-radius: 12px;
-	padding: 16px;
-	background: #fafdff;
-}
-
-.result-card p {
-	margin: 8px 0;
+.message-info {
+	margin-top: 10px;
+	padding: 10px 14px;
+	border-radius: 8px;
+	background: rgba(9, 46, 60, 0.52);
+	border: 1px solid rgba(197, 232, 245, 0.35);
+	color: #ecfbff;
+	font-size: 0.92rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
 }
 
 @media (max-width: 640px) {

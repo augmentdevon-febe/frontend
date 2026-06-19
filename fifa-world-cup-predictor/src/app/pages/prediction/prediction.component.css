@@ -6,6 +6,8 @@
   --wc-text-900: #072a36;
 }
 
+/* ── Page & Panel ─────────────────────────────────────────── */
+
 .world-cup-page {
   background:
     radial-gradient(circle at 12% 18%, rgba(242, 189, 73, 0.36), transparent 34%),
@@ -38,6 +40,8 @@
   z-index: 1;
 }
 
+/* ── Hero ─────────────────────────────────────────────────── */
+
 .hero {
   margin-bottom: 18px;
 }
@@ -62,25 +66,13 @@
   max-width: 62ch;
 }
 
+/* ── Status stack ─────────────────────────────────────────── */
+
 .status-stack {
   margin-top: 18px;
 }
 
-.loading {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.form-header {
-  margin-bottom: 12px;
-}
-
-.form-title {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #f8ffff;
-}
+/* ── Prediction form panel ────────────────────────────────── */
 
 .prediction-form {
   margin-top: 18px;
@@ -92,32 +84,40 @@
   backdrop-filter: blur(2px);
 }
 
-.label {
-  color: #ddf7ff;
+.form-header {
+  margin-bottom: 4px;
 }
 
-.select {
-  border: 1px solid rgba(199, 231, 243, 0.5);
-  background: rgba(242, 253, 255, 0.95);
-  color: var(--wc-text-900);
+.form-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #f8ffff;
 }
 
-.button {
-  background: linear-gradient(140deg, #f6c75a, #e7a822);
-  color: #1f2510;
-  font-weight: 700;
-  box-shadow: 0 10px 20px rgba(22, 17, 3, 0.32);
+/* mat-form-field full-width */
+.fixture-field {
+  width: 100%;
+  margin-top: 12px;
 }
 
-.button:hover {
-  background: linear-gradient(140deg, #f8d684, #f0b837);
+/* Override mat-form-field colors for dark panel */
+:host ::ng-deep .fixture-field .mat-mdc-text-field-wrapper {
+  background: rgba(242, 253, 255, 0.92);
+  border-radius: 6px;
 }
 
-.button:disabled {
-  background: rgba(236, 214, 168, 0.7);
-  color: #4d4d4d;
+:host ::ng-deep .fixture-field .mdc-floating-label,
+:host ::ng-deep .fixture-field .mat-mdc-floating-label {
+  color: rgba(7, 42, 54, 0.8);
 }
 
+:host ::ng-deep .fixture-field .mdc-notched-outline__leading,
+:host ::ng-deep .fixture-field .mdc-notched-outline__notch,
+:host ::ng-deep .fixture-field .mdc-notched-outline__trailing {
+  border-color: rgba(199, 231, 243, 0.5);
+}
+
+/* Overlay spinner */
 .prediction-overlay {
   position: absolute;
   inset: 0;
@@ -132,58 +132,37 @@
   font-weight: 600;
 }
 
-.spinner {
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid rgba(225, 247, 255, 0.24);
-  border-top-color: #f2bd49;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.spinner-large {
-  width: 2rem;
-  height: 2rem;
-  border-width: 3px;
-}
-
-.message {
-  background: rgba(9, 46, 60, 0.52);
-  border-color: rgba(197, 232, 245, 0.35);
-  color: #ecfbff;
-}
-
-.message.error {
-  background: rgba(113, 18, 34, 0.42);
-  border-color: rgba(246, 165, 178, 0.5);
-}
-
-.message.success {
-  background: rgba(23, 94, 48, 0.44);
-  border-color: rgba(171, 237, 186, 0.5);
-}
+/* ── Result mat-card ──────────────────────────────────────── */
 
 .result-card {
   margin-top: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.33);
-  border-radius: 14px;
-  padding: 18px;
   background:
-    linear-gradient(140deg, rgba(7, 59, 55, 0.7), rgba(7, 28, 37, 0.78)),
+    linear-gradient(140deg, rgba(7, 59, 55, 0.82), rgba(7, 28, 37, 0.88)),
     radial-gradient(circle at 95% 5%, rgba(242, 189, 73, 0.24), transparent 42%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--wc-ice-100);
 }
 
-.result-title {
-  margin: 0 0 8px;
-  font-size: 1.06rem;
+:host ::ng-deep .result-card .mat-mdc-card-header {
+  padding: 16px 16px 8px;
+}
+
+:host ::ng-deep .result-card .mat-mdc-card-title {
   color: #f6dca0;
+  font-size: 1.06rem;
   letter-spacing: 0.02em;
 }
 
-.result-card p {
-  margin: 8px 0;
+:host ::ng-deep .result-card .mat-mdc-card-content {
+  padding: 0 16px 16px;
   color: var(--wc-ice-100);
 }
+
+:host ::ng-deep .result-card .mat-mdc-card-content p {
+  margin: 8px 0;
+}
+
+/* ── Scoreboard ───────────────────────────────────────────── */
 
 .scoreboard {
   display: grid;
@@ -241,6 +220,8 @@
   font-weight: 800;
 }
 
+/* ── Bracket panel ────────────────────────────────────────── */
+
 .bracket-panel {
   margin: 10px 0 14px;
   border: 1px dashed rgba(242, 189, 73, 0.72);
@@ -289,6 +270,8 @@
   text-align: center;
 }
 
+/* ── Misc ─────────────────────────────────────────────────── */
+
 .login-link {
   color: #ffd877;
   font-weight: 700;
@@ -304,11 +287,7 @@
   color: #ffe7ae;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* ── Responsive ───────────────────────────────────────────── */
 
 @media (max-width: 640px) {
   .world-cup-panel {

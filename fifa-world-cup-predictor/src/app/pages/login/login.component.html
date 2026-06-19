@@ -2,16 +2,16 @@
   <section class="panel">
     <h1 class="title">FIFA World Cup Predictor</h1>
     <p class="subtitle">
-      Login with Google to predict FIFA World Cup match results.
+      Login with Google to predict FIFA World Cup match results using Open AI.
     </p>
 
     <div class="row">
-      <button type="button" class="button" (click)="startLogin()" [disabled]="isLoginInProgress">
+      <button type="button" mat-raised-button color="accent" (click)="startLogin()" [disabled]="isLoginInProgress">
         Login with Google
       </button>
+      <mat-spinner diameter="28" *ngIf="isCheckingSession || isLoginInProgress"></mat-spinner>
     </div>
 
-    <p class="message" *ngIf="isCheckingSession || isLoginInProgress">Checking your session...</p>
-    <p class="message error" *ngIf="loginError">{{ loginError }}</p>
+    <p class="message-error" *ngIf="loginError">{{ loginError }}</p>
   </section>
 </main>

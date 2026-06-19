@@ -7,64 +7,70 @@
     </header>
 
     <section class="status-stack" aria-live="polite">
-      <p class="message loading" *ngIf="isCheckingAuth && authStatusMessage">
-        <span class="spinner" aria-hidden="true"></span>
+      <p class="message-info" *ngIf="isCheckingAuth && authStatusMessage">
+        <mat-spinner diameter="18"></mat-spinner>
         <span>{{ authStatusMessage }}</span>
       </p>
-      <p class="message success" *ngIf="!isCheckingAuth && isAuthenticated && authStatusMessage">{{ authStatusMessage }}</p>
-      <p class="message error" *ngIf="!isCheckingAuth && !isAuthenticated && authStatusMessage">{{ authStatusMessage }}</p>
+      <p class="message-info" *ngIf="!isCheckingAuth && isAuthenticated && authStatusMessage">{{ authStatusMessage }}</p>
+      <p class="message-error" *ngIf="!isCheckingAuth && !isAuthenticated && authStatusMessage">{{ authStatusMessage }}</p>
       <div class="row" *ngIf="!isCheckingAuth && !isAuthenticated">
-        <button class="button" type="button" (click)="goToLogin()">Go to Login</button>
+        <button mat-stroked-button color="accent" type="button" (click)="goToLogin()">Go to Login</button>
       </div>
-      <p class="message loading" *ngIf="isLoadingMatches">
-        <span class="spinner" aria-hidden="true"></span>
+      <p class="message-info" *ngIf="isLoadingMatches">
+        <mat-spinner diameter="18"></mat-spinner>
         <span>Loading matches from backend...</span>
       </p>
-      <p class="message error" *ngIf="matchesError">{{ matchesError }}</p>
+      <p class="message-error" *ngIf="matchesError">{{ matchesError }}</p>
+      <p class="message-info" *ngIf="!isLoadingMatches && !matchesError && !hasPredictableMatch">
+        No upcoming matches available right now. Please check back later.
+      </p>
     </section>
 
     <form
       class="prediction-form"
       [formGroup]="predictionForm"
       (ngSubmit)="onSubmit()"
-      *ngIf="!isLoadingMatches && !matchesError && !requiresLogin"
+      *ngIf="!isLoadingMatches && !matchesError && !requiresLogin && hasPredictableMatch"
     >
       <div class="form-header">
         <h2 class="form-title">Match Selector</h2>
       </div>
 
-      <div class="field">
-        <select id="matchSelect" class="select" formControlName="matchIndex" [disabled]="!canPredict">
-          <option value="" disabled selected>Select a match</option>
-          <option *ngFor="let match of matches; let index = index" [value]="index">
+      <mat-form-field appearance="outline" class="fixture-field">
+        <mat-label>Pick a match</mat-label>
+        <mat-select formControlName="matchIndex">
+          <mat-option *ngFor="let match of matches; let index = index" [value]="index">
             {{ formatMatchOption(match) }}
-          </option>
-        </select>
-      </div>
+          </mat-option>
+        </mat-select>
+        <mat-error *ngIf="isMatchMissing || formError">{{ formError || 'Please select a match.' }}</mat-error>
+      </mat-form-field>
 
-      <p class="message error" *ngIf="isMatchMissing || formError">{{ formError || 'Please select a match.' }}</p>
-      <p class="message error" *ngIf="predictionError">{{ predictionError }}</p>
+      <p class="message-error" *ngIf="predictionError">{{ predictionError }}</p>
 
       <div class="row">
-        <button class="button" type="submit" [disabled]="!canPredict">
+        <button mat-raised-button color="accent" type="submit" [disabled]="!canPredict">
           {{ isPredicting ? 'Predicting...' : 'Predict Result' }}
         </button>
       </div>
 
       <div class="prediction-overlay" *ngIf="isPredicting" aria-live="polite" aria-busy="true">
-        <span class="spinner spinner-large" aria-hidden="true"></span>
+        <mat-spinner diameter="48"></mat-spinner>
         <span>Running simulation...</span>
       </div>
     </form>
 
-    <p class="message error" *ngIf="requiresLogin">
+    <p class="message-error" *ngIf="requiresLogin">
       Please
       <a class="login-link" routerLink="/login">go to the login page</a>
       to continue.
     </p>
 
-    <article class="result-card" *ngIf="prediction && !requiresLogin">
-      <h2 class="result-title">Predicted Outcome</h2>
+    <mat-card class="result-card" *ngIf="prediction && !requiresLogin">
+      <mat-card-header>
+        <mat-card-title>Predicted Outcome</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
 
       <div class="scoreboard" aria-label="Predicted match scoreboard">
         <div class="team-pill">
@@ -88,9 +94,10 @@
         </div>
       </section>
 
-      <p><strong>Result:</strong> {{ prediction.result }}</p>
+      <p><strong>Result:</strong> {{ formatResultLabel(prediction) }}</p>
       <p><strong>Explanation:</strong> {{ prediction.explanation }}</p>
-    </article>
+      </mat-card-content>
+    </mat-card>
 
     <p class="photo-credit">
       Stadium photo by

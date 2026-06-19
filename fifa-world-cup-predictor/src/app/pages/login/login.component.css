@@ -1,3 +1,7 @@
 .panel {
   text-align: left;
 }
+
+mat-spinner {
+  display: inline-flex;
+}
