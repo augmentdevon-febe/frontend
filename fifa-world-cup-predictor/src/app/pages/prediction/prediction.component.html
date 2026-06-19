@@ -37,8 +37,7 @@
       </div>
 
       <mat-form-field appearance="outline" class="fixture-field">
-        <mat-label>Pick a match</mat-label>
-        <mat-select formControlName="matchIndex">
+        <mat-select formControlName="matchIndex" placeholder="Pick a match" aria-label="Pick a match">
           <mat-option *ngFor="let match of matches; let index = index" [value]="index">
             {{ formatMatchOption(match) }}
           </mat-option>
