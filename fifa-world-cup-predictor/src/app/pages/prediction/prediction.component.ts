@@ -85,6 +85,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
   isLoadingMatches = true;
   isCheckingAuth = true;
   isPredicting = false;
+  isLoggingOut = false;
   isAuthenticated = false;
 
   authStatusMessage = 'Checking your authentication status...';
@@ -232,6 +233,31 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   goToLogin(): void {
     this.router.navigate(['/login']);
+  }
+
+  logOff(): void {
+    if (this.isLoggingOut) {
+      return;
+    }
+
+    this.isLoggingOut = true;
+    this.authService
+      .logout()
+      .pipe(
+        timeout(6000),
+        finalize(() => {
+          this.isLoggingOut = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.authService.startGoogleLogin();
+        },
+        error: () => {
+          this.authService.startGoogleLogin();
+        }
+      });
   }
 
   // Formats each match option text shown in the dropdown list.

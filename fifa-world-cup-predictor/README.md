@@ -8,13 +8,109 @@ To start a local development server, run:
 
 ```bash
 ng serve
-or use
+# or
 npm run start
-when server start follow instrucions of the page to load in browser
 ```
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. 
 The application will automatically reload whenever you modify any of the source files.
+
+## Backend API requirements
+
+This frontend now relies on backend endpoints for both auth and data. During local development, `proxy.conf.json` forwards `/api/*` calls to `http://localhost:8080`.
+
+Required endpoints:
+
+- `GET /api/auth/session` (with credentials) to validate login status.
+- `GET /api/matches` (with credentials) to load the match selector dropdown.
+- `POST /api/predictions` (with credentials) to request a prediction.
+
+The `GET /api/matches` response must be a top-level JSON array with this shape per item:
+
+```json
+[
+	{
+		"homeTeam": "Mexico",
+		"awayTeam": "South Africa",
+		"matchStage": "Group A",
+		"venue": "Estadio Ciudad de Mexico",
+		"matchDate": "2026-06-11T13:00:00-06:00"
+	}
+]
+```
+
+## Architecture Sequence: Server Start to Prediction Flow
+
+The diagram below describes the runtime sequence from local server startup through login/session validation, match loading from backend, and prediction submission.
+
+```mermaid
+sequenceDiagram
+		autonumber
+		actor Developer
+		participant Terminal as PowerShell Terminal
+		participant NPM as npm CLI
+		participant NG as Angular Dev Server (ng serve)
+		participant Browser as Browser
+		participant Index as index.html (app shell)
+		participant GoogleFontsAPI as Google Fonts API (fonts.googleapis.com)
+		participant GoogleFontsCDN as Google Fonts CDN (fonts.gstatic.com)
+		participant App as Angular App (main.ts + AppComponent)
+		participant Router as Angular Router
+		participant Login as LoginComponent
+		participant Predict as PredictionComponent
+		participant AuthService as AuthService
+		participant MatchesService as MatchesService
+		participant PredictionService as PredictionService
+		participant Proxy as Dev Proxy (/api -> localhost:8080)
+		participant Backend as Backend API (localhost:8080)
+
+		Developer->>Terminal: Run npm run start
+		Terminal->>NPM: Execute start script
+		NPM->>NG: ng serve --proxy-config proxy.conf.json
+		NG-->>Terminal: Build app bundle and start watch mode on :4200
+
+		Developer->>Browser: Open http://localhost:4200/
+		Browser->>NG: GET /
+		NG-->>Browser: Return index.html + JS/CSS bundles
+
+		Browser->>GoogleFontsAPI: Request Roboto + Material Icons CSS
+		GoogleFontsAPI-->>Browser: Font stylesheet response
+		Browser->>GoogleFontsCDN: Request font files
+		GoogleFontsCDN-->>Browser: Font binaries
+
+		Browser->>App: Execute main.js
+		App->>Router: Bootstrap app + evaluate routes
+		Router->>Router: Redirect '' -> /login
+		Router->>Login: Instantiate LoginComponent
+
+		Login->>AuthService: getSession() on init
+		AuthService->>Proxy: GET /api/auth/session (withCredentials)
+		Proxy->>Backend: Forward GET /api/auth/session
+		Backend-->>Proxy: Session status (authenticated true/false or 401/403)
+		Proxy-->>AuthService: Return backend response
+		AuthService-->>Login: Session payload or auth error
+
+		alt Authenticated session
+			Login->>Router: Navigate to /predict
+			Router->>Predict: Instantiate PredictionComponent
+			Predict->>MatchesService: getMatches() on init
+			MatchesService->>Proxy: GET /api/matches (withCredentials)
+			Proxy->>Backend: Forward GET /api/matches
+			Backend-->>Proxy: Match[] payload
+			Proxy-->>MatchesService: Return matches response
+			MatchesService-->>Predict: Match list for dropdown
+
+			Developer->>Browser: Select match and click Predict Result
+			Predict->>PredictionService: predict(match)
+			PredictionService->>Proxy: POST /api/predictions (withCredentials)
+			Proxy->>Backend: Forward prediction request
+			Backend-->>Proxy: Prediction payload
+			Proxy-->>PredictionService: Return prediction response
+			PredictionService-->>Predict: Render predicted outcome
+		else No active session or auth rejected
+			Login-->>Browser: Render login landing page with Google login button
+		end
+```
 
 ## Code scaffolding
 

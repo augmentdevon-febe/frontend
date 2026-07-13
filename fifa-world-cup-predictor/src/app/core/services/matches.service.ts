@@ -7,11 +7,13 @@ import { Match } from '../models/match.model';
   providedIn: 'root'
 })
 export class MatchesService {
-  private readonly matchesUrl = '/assets/matches.json';
+  private readonly matchesUrl = '/api/matches';
 
   constructor(private readonly http: HttpClient) {}
 
   getMatches(): Observable<Match[]> {
-    return this.http.get<Match[]>(this.matchesUrl);
+    return this.http.get<Match[]>(this.matchesUrl, {
+      withCredentials: true
+    });
   }
 }

@@ -2,7 +2,19 @@
   <section class="panel world-cup-panel">
     <header class="hero">
       <p class="tournament-eyebrow">Road To The Final 2026</p>
-      <h1 class="title">FIFA World Cup Predictor</h1>
+      <div class="hero-title-row">
+        <h1 class="title">FIFA World Cup Predictor</h1>
+        <button
+          *ngIf="isAuthenticated"
+          mat-stroked-button
+          type="button"
+          class="logoff-button"
+          (click)="logOff()"
+          [disabled]="isLoggingOut"
+        >
+          {{ isLoggingOut ? 'Logging off...' : 'Log off' }}
+        </button>
+      </div>
       <p class="subtitle">Pick a match, run the model by clicking the "Predict result" button, and see the Open AI expected result.</p>
     </header>
 
