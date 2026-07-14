@@ -3,10 +3,7 @@ services:
     name: fifa-world-cup-predictor-frontend
     runtime: static
     rootDir: fifa-world-cup-predictor
-    buildCommand: |
-      npm install
-      echo "window.__APP_CONFIG__={API_BASE_URL:'$API_BASE_URL'};" > public/app-config.js
-      npm run build
+    buildCommand: npm install && echo "window.__APP_CONFIG__={API_BASE_URL:'$API_BASE_URL'};" > public/app-config.js && npm run build
     staticPublishPath: dist/fifa-world-cup-predictor/browser
     pullRequestPreviewsEnabled: true
     envVars:
