@@ -136,6 +136,70 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Deploy To Render (Exact Steps)
+
+This project is configured to read backend base URL from `public/app-config.js` at runtime.
+
+### Render Blueprint (recommended)
+
+This repository now includes a Render Blueprint file: `render.yaml`.
+
+1. In Render, choose `New` -> `Blueprint`.
+2. Connect this repository.
+3. When prompted for environment variables, set:
+	- `API_BASE_URL` = your backend URL (example: `https://your-backend.onrender.com`)
+4. Deploy.
+
+The blueprint already configures:
+
+- Static site build command with runtime `app-config.js` injection.
+- Publish directory `dist/fifa-world-cup-predictor/browser`.
+- SPA rewrite rule (`/*` -> `/index.html`) for Angular routes.
+
+### 1) Deploy backend first (Render Web Service)
+
+1. Create a Render `Web Service` for your backend repository.
+2. Deploy and copy the backend public URL, for example:
+	- `https://your-backend.onrender.com`
+3. Ensure backend CORS/cookie settings allow your frontend origin:
+	- `Access-Control-Allow-Origin` = your Render frontend URL
+	- `Access-Control-Allow-Credentials` = `true`
+	- Session cookie supports cross-site usage when needed (`Secure`, `SameSite=None`).
+
+### 2) Deploy frontend (Render Static Site)
+
+1. Create a Render `Static Site` for this repository.
+2. Set environment variable in Render static site:
+	- Key: `API_BASE_URL`
+	- Value: your backend URL (for example `https://your-backend.onrender.com`)
+3. Configure build settings exactly:
+	- Build Command:
+
+```bash
+npm ci && echo "window.__APP_CONFIG__={API_BASE_URL:'$API_BASE_URL'};" > public/app-config.js && npm run build
+```
+
+	- Publish Directory:
+
+```bash
+dist/fifa-world-cup-predictor/browser
+```
+
+4. Deploy.
+
+### 3) Verify after deploy
+
+1. Open frontend Render URL.
+2. Click login and confirm Google flow returns to `/login` then routes to `/predict`.
+3. Confirm match dropdown loads from backend.
+4. Run prediction and verify response from backend.
+5. Click `Log off` and verify session closes and login flow restarts.
+
+### Notes
+
+- Local development remains unchanged with `npm run start` and `proxy.conf.json`.
+- In production, all API calls use `API_BASE_URL` injected into `public/app-config.js` during Render build.
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:

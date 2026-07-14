@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { buildApiUrl } from './api-url';
 
 export interface AuthSessionResponse {
   subject?: string;
@@ -13,15 +14,15 @@ export interface AuthSessionResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly loginUrl = 'http://localhost:8080/api/auth/login';
-  private readonly sessionUrl = '/api/auth/session';
-  private readonly logoutUrl = '/api/auth/logout';
+  private readonly loginUrl = buildApiUrl('/api/auth/login');
+  private readonly sessionUrl = buildApiUrl('/api/auth/session');
+  private readonly logoutUrl = buildApiUrl('/api/auth/logout');
 
   constructor(private readonly http: HttpClient) {}
 
   startGoogleLogin(): void {
     const loginRedirect = `${window.location.origin}/login`;
-    const url = new URL(this.loginUrl);
+    const url = new URL(this.loginUrl, window.location.origin);
 
     url.searchParams.set('redirect_uri', loginRedirect);
     url.searchParams.set('redirectUrl', loginRedirect);

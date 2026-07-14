@@ -4,12 +4,13 @@ import { Observable } from 'rxjs';
 import { Match } from '../models/match.model';
 import { PredictionRequest } from '../models/prediction-request.model';
 import { PredictionResponse } from '../models/prediction-response.model';
+import { buildApiUrl } from './api-url';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PredictionService {
-  private readonly predictionUrl = '/api/predictions';
+  private readonly predictionUrl = buildApiUrl('/api/predictions');
 
   constructor(private readonly http: HttpClient) {}
 

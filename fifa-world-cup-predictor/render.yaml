@@ -1,0 +1,17 @@
+services:
+  - type: static_site
+    name: fifa-world-cup-predictor-frontend
+    env: static
+    buildCommand: |
+      npm ci
+      echo "window.__APP_CONFIG__={API_BASE_URL:'$API_BASE_URL'};" > public/app-config.js
+      npm run build
+    staticPublishPath: dist/fifa-world-cup-predictor/browser
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: API_BASE_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
