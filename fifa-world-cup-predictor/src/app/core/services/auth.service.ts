@@ -21,7 +21,7 @@ export class AuthService {
   constructor(private readonly http: HttpClient) {}
 
   startGoogleLogin(): void {
-    const loginRedirect = `${window.location.origin}/login`;
+    const loginRedirect = `${window.location.origin}/predict`;
     const url = new URL(this.loginUrl, window.location.origin);
 
     url.searchParams.set('redirect_uri', loginRedirect);
