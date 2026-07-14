@@ -176,7 +176,7 @@ The blueprint already configures:
 	- Build Command:
 
 ```bash
-npm ci && echo "window.__APP_CONFIG__={API_BASE_URL:'$API_BASE_URL'};" > public/app-config.js && npm run build
+npm install && echo "window.__APP_CONFIG__={API_BASE_URL:'$API_BASE_URL'};" > public/app-config.js && npm run build
 ```
 
 	- Publish Directory:
