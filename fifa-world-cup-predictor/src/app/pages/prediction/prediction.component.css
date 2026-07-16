@@ -50,6 +50,10 @@
   cursor: not-allowed;
 }
 
+.logoff-button ::ng-deep .mdc-button__label {
+  color: #ffffff !important;
+}
+
 /* ── Page & Panel ─────────────────────────────────────────── */
 
 .world-cup-page {
