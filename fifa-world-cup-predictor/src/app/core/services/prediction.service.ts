@@ -23,8 +23,6 @@ export class PredictionService {
       matchDate: match.matchDate
     };
 
-    return this.http.post<PredictionResponse>(this.predictionUrl, requestBody, {
-      withCredentials: true
-    });
+    return this.http.post<PredictionResponse>(this.predictionUrl, requestBody);
   }
 }

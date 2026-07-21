@@ -12,6 +12,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { Match } from '../../core/models/match.model';
 import { PredictionResponse } from '../../core/models/prediction-response.model';
+import { getAvailableMatches } from '../../core/helpers/match-filter.helper';
+import {
+  formatPredictionResultLabel,
+  getProjectedWinner,
+  mapPredictionErrorMessage
+} from '../../core/helpers/prediction-parser.helper';
+import { getTeamInitials as buildTeamInitials } from '../../core/helpers/team-badge.helper';
 import { AuthService } from '../../core/services/auth.service';
 import { MatchesService } from '../../core/services/matches.service';
 import { PredictionService } from '../../core/services/prediction.service';
@@ -66,18 +73,6 @@ export class PredictionComponent implements OnInit, OnDestroy {
   } as const;
 
   readonly predictionForm;
-  private readonly ongoingMatchWindowMs = 3 * 60 * 60 * 1000;
-
-  private readonly mexicoCityDateTimeFormatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Mexico_City',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23'
-  });
 
   matches: Match[] = [];
   prediction: PredictionResponse | null = null;
@@ -146,27 +141,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   // Derives a user-friendly winner name from prediction result semantics.
   get projectedWinner(): string {
-    if (!this.prediction) {
-      return 'TBD';
-    }
-
-    const result = (this.prediction.result || '').toLowerCase();
-    const homeTeam = this.prediction.homeTeam;
-    const awayTeam = this.prediction.awayTeam;
-
-    if (result.includes('draw')) {
-      return 'Draw';
-    }
-
-    if (result.includes(homeTeam.toLowerCase()) || result.includes('home')) {
-      return homeTeam;
-    }
-
-    if (result.includes(awayTeam.toLowerCase()) || result.includes('away')) {
-      return awayTeam;
-    }
-
-    return homeTeam;
+    return getProjectedWinner(this.prediction);
   }
 
   // Validates selection and requests a prediction from backend for the selected match.
@@ -273,42 +248,12 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   // Generates compact initials used for team badge placeholders.
   getTeamInitials(team: string): string {
-    const chunks = team
-      .trim()
-      .split(/[^A-Za-z0-9]+/)
-      .filter(Boolean);
-
-    if (chunks.length === 0) {
-      return '';
-    }
-
-    if (chunks.length === 1) {
-      return chunks[0].slice(0, 3).toUpperCase();
-    }
-
-    return chunks
-      .slice(0, 2)
-      .map((chunk) => chunk[0].toUpperCase())
-      .join('');
+    return buildTeamInitials(team);
   }
 
   // Converts backend result codes into readable labels shown in UI.
   formatResultLabel(prediction: PredictionResponse): string {
-    const normalizedResult = (prediction.result || '').trim().toUpperCase();
-
-    if (normalizedResult === 'HOME_WIN') {
-      return prediction.homeTeam + ' Win';
-    }
-
-    if (normalizedResult === 'AWAY_WIN') {
-      return prediction.awayTeam + ' Win';
-    }
-
-    if (normalizedResult === 'DRAW') {
-      return 'DRAW';
-    }
-
-    return prediction.result;
+    return formatPredictionResultLabel(prediction);
   }
 
   // Loads matches, keeps upcoming/ongoing fixtures (3-hour window), and sorts by kickoff.
@@ -327,20 +272,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (matches) => {
-          const nowMexicoCityKey = this.toMexicoCityDateTimeKey(new Date());
-          this.matches = matches
-            .filter((match) => {
-              const kickoff = new Date(match.matchDate);
-              const availableUntil = new Date(kickoff.getTime() + this.ongoingMatchWindowMs);
-
-              return this.toMexicoCityDateTimeKey(availableUntil) >= nowMexicoCityKey;
-            })
-            .sort((firstMatch, secondMatch) => {
-              const firstDate = new Date(firstMatch.matchDate).getTime();
-              const secondDate = new Date(secondMatch.matchDate).getTime();
-
-              return firstDate - secondDate;
-            });
+          this.matches = getAvailableMatches(matches);
           this.cdr.detectChanges();
         },
         error: () => {
@@ -348,22 +280,6 @@ export class PredictionComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         }
       });
-  }
-
-  // Builds a sortable Mexico City local-time key for timezone-aware match filtering.
-  private toMexicoCityDateTimeKey(date: Date): string {
-    const parts = this.mexicoCityDateTimeFormatter.formatToParts(date);
-    const pick = (type: Intl.DateTimeFormatPartTypes): string =>
-      parts.find((part) => part.type === type)?.value || '00';
-
-    const year = pick('year');
-    const month = pick('month');
-    const day = pick('day');
-    const hour = pick('hour');
-    const minute = pick('minute');
-    const second = pick('second');
-
-    return `${year}${month}${day}${hour}${minute}${second}`;
   }
 
   // Verifies current auth session to control UI messaging and login redirect prompts.
@@ -406,14 +322,10 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   // Normalizes backend/network failures into user-facing prediction error messages.
   private toPredictionError(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      if (error.status === 401 || error.status === 403) {
-        return this.pageMessages[this.messageIndex.sessionExpired];
-      }
-
-      return this.pageMessages[this.messageIndex.predictionFailed];
-    }
-
-    return this.pageMessages[this.messageIndex.unexpectedError];
+    return mapPredictionErrorMessage(error, {
+      sessionExpired: this.pageMessages[this.messageIndex.sessionExpired],
+      predictionFailed: this.pageMessages[this.messageIndex.predictionFailed],
+      unexpectedError: this.pageMessages[this.messageIndex.unexpectedError]
+    });
   }
 }

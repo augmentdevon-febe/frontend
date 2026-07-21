@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -36,6 +36,7 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly route: ActivatedRoute,
     private readonly router: Router
   ) {}
 
@@ -53,7 +54,7 @@ export class LoginComponent implements OnInit {
   startLogin(): void {
     this.loginError = '';
     this.isLoginInProgress = true;
-    this.authService.startGoogleLogin();
+    this.authService.startGoogleLogin(this.getSafeReturnPath());
   }
 
   // Queries backend session state and routes to prediction page when authenticated.
@@ -83,7 +84,7 @@ export class LoginComponent implements OnInit {
       next: (session) => {
         if (session.authenticated) {
           this.isLoginInProgress = false;
-          this.router.navigate(['/predict']);
+          this.router.navigateByUrl(this.getSafeReturnPath());
           return;
         }
 
@@ -111,5 +112,15 @@ export class LoginComponent implements OnInit {
         this.loginError = this.pageMessages[this.messageIndex.sessionCheckFailed];
       }
     });
+  }
+
+  private getSafeReturnPath(): string {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/predict';
+
+    if (!returnUrl.startsWith('/') || returnUrl.startsWith('//')) {
+      return '/predict';
+    }
+
+    return returnUrl;
   }
 }

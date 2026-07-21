@@ -13,8 +13,6 @@ export class MatchesService {
   constructor(private readonly http: HttpClient) {}
 
   getMatches(): Observable<Match[]> {
-    return this.http.get<Match[]>(this.matchesUrl, {
-      withCredentials: true
-    });
+    return this.http.get<Match[]>(this.matchesUrl);
   }
 }

@@ -20,8 +20,9 @@ export class AuthService {
 
   constructor(private readonly http: HttpClient) {}
 
-  startGoogleLogin(): void {
-    const loginRedirect = `${window.location.origin}/predict`;
+  startGoogleLogin(returnPath: string = '/predict'): void {
+    const normalizedPath = returnPath.startsWith('/') ? returnPath : `/${returnPath}`;
+    const loginRedirect = `${window.location.origin}${normalizedPath}`;
     const url = new URL(this.loginUrl, window.location.origin);
 
     url.searchParams.set('redirect_uri', loginRedirect);
@@ -32,14 +33,10 @@ export class AuthService {
   }
 
   getSession(): Observable<AuthSessionResponse> {
-    return this.http.get<AuthSessionResponse>(this.sessionUrl, {
-      withCredentials: true
-    });
+    return this.http.get<AuthSessionResponse>(this.sessionUrl);
   }
 
   logout(): Observable<void> {
-    return this.http.post<void>(this.logoutUrl, {}, {
-      withCredentials: true
-    });
+    return this.http.post<void>(this.logoutUrl, {});
   }
 }

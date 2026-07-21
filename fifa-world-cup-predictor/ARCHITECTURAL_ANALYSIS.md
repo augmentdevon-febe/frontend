@@ -2,7 +2,7 @@
 
 ## 1. Resumen ejecutivo
 
-Este proyecto es un frontend Angular 22 implementado con componentes standalone, rutas simples y una capa de servicios para integrar el flujo de autenticación y predicción con un backend externo. La arquitectura actual está pensada como un MVP: prioriza rapidez de desarrollo y simplicidad operativa sobre un modelo más formal de estados, guards de ruta, interceptores y pruebas automatizadas.
+Este proyecto es un frontend Angular 22 implementado con componentes standalone, rutas simples y una capa de servicios para integrar el flujo de autenticación y predicción con un backend externo. La arquitectura evolucionó desde un MVP inicial hacia una base más robusta: ahora incorpora guard de ruta para proteger /predict, un interceptor de autenticación para centralizar credenciales/manejo de 401-403 y helpers puros para extraer reglas de negocio fuera de los componentes.
 
 ## 2. Objetivo funcional del sistema
 
@@ -36,10 +36,17 @@ El sistema soporta tres responsabilidades principales:
 
 ### 3.5 Infraestructura y configuración operativa
 - app.routes.ts: mapeo de rutas del sistema.
+- auth.guard.ts: protección declarativa de /predict ante sesiones no válidas.
+- auth.interceptor.ts: centraliza withCredentials para /api y manejo transversal de 401/403.
 - proxy.conf.json: proxy de desarrollo para redirigir /api a http://localhost:8080.
 - public/app-config.js: archivo de configuración cargado en runtime para inyectar API_BASE_URL.
 - render.yaml: blueprint de despliegue en Render para producir la app de forma estática y configurar variables de runtime.
 - angular.json: configuración de compilación y assets del proyecto.
+
+### 3.6 Helpers de reglas de negocio
+- match-filter.helper.ts: filtra y ordena partidos disponibles en ventana temporal, desacoplado de la UI.
+- prediction-parser.helper.ts: transforma respuestas de predicción y normaliza mensajes de error.
+- team-badge.helper.ts: genera iniciales de equipo para rendering visual.
 
 ## 4. Arquitectura funcional por capas
 
@@ -55,6 +62,8 @@ Responsable de encapsular integración con el backend y reglas de acceso a recur
 - MatchesService
 - PredictionService
 
+Nota: la responsabilidad de adjuntar credenciales al request ya no está en cada servicio, sino centralizada en AuthInterceptor.
+
 ### 4.3 Capa de modelos
 Define contratos de datos y tipado para las transacciones entre frontend y backend:
 - Match
@@ -67,6 +76,8 @@ Responsable del arranque, routing, configuración de URL y despliegue:
 - main.ts
 - app.config.ts
 - app.routes.ts
+- core/guards/auth.guard.ts
+- core/interceptors/auth.interceptor.ts
 - api-url.ts
 - proxy.conf.json
 - render.yaml
@@ -120,8 +131,9 @@ Componentes involucrados:
 Descripción:
 1. El usuario pulsa “Login with Google”.
 2. LoginComponent.startLogin() limpia el estado local y marca el login como en progreso.
-3. AuthService.startGoogleLogin() construye la URL del backend con redirect_uri, redirectUrl y returnUrl apuntando a /predict.
-4. El navegador ejecuta una redirección completa al endpoint de login externo.
+3. LoginComponent obtiene returnUrl desde query params (si existe), lo sanitiza y se lo pasa a AuthService.startGoogleLogin().
+4. AuthService.startGoogleLogin() construye la URL del backend con redirect_uri, redirectUrl y returnUrl apuntando a la ruta objetivo segura.
+5. El navegador ejecuta una redirección completa al endpoint de login externo.
 
 Diagrama de secuencia:
 ```mermaid
@@ -135,7 +147,7 @@ sequenceDiagram
 	Usuario->>Login: Click en Login with Google
 	Login->>Login: startLogin() limpia estado
 	Login->>Auth: startGoogleLogin()
-	Auth->>Auth: Construye URL con returnUrl=/predict
+	Auth->>Auth: Construye URL con returnUrl seguro
 	Auth->>Browser: Asigna location.href
 	Browser->>Backend: GET /api/auth/login?...redirect
 ```
@@ -150,7 +162,7 @@ Componentes involucrados:
 
 Descripción:
 1. LoginComponent.ngOnInit() invoca checkSessionAndNavigate(false).
-2. AuthService.getSession() realiza GET /api/auth/session con withCredentials: true.
+2. AuthService.getSession() realiza GET /api/auth/session; AuthInterceptor adjunta withCredentials para requests /api.
 3. Si el backend responde con authenticated: true, el componente navega a /predict.
 4. Si el backend retorna 401/403 o no está autenticado, el flujo se mantiene en login y muestra mensaje de login requerido.
 
@@ -164,7 +176,7 @@ sequenceDiagram
 
 	Login->>Login: ngOnInit()
 	Login->>Auth: checkSessionAndNavigate(false)
-	Auth->>Backend: GET /api/auth/session (withCredentials)
+	Auth->>Backend: GET /api/auth/session
 	alt authenticated: true
 		Backend-->>Auth: 200 { authenticated: true }
 		Auth-->>Login: Sesion valida
@@ -186,7 +198,7 @@ Componentes involucrados:
 
 Descripción:
 1. PredictionComponent.ngOnInit() invoca loadMatches() y checkAuthentication().
-2. MatchesService.getMatches() consulta /api/matches con credenciales.
+2. MatchesService.getMatches() consulta /api/matches; AuthInterceptor adjunta withCredentials.
 3. PredictionComponent filtra partidos que aún estén disponibles en una ventana de 3 horas desde el kickoff, usando una clave temporal calculada en America/Mexico_City.
 4. El listado se ordena cronológicamente para formar el selector.
 
@@ -200,7 +212,7 @@ sequenceDiagram
 
 	Pred->>Pred: ngOnInit()
 	Pred->>Matches: loadMatches()
-	Matches->>Backend: GET /api/matches (withCredentials)
+	Matches->>Backend: GET /api/matches
 	Backend-->>Matches: Lista de partidos
 	Matches-->>Pred: Match[]
 	Pred->>Pred: Filtrar ventana 3h (America/Mexico_City)
@@ -220,7 +232,7 @@ Componentes involucrados:
 Descripción:
 1. El usuario selecciona un partido del dropdown y confirma con “Predict Result”.
 2. PredictionComponent.onSubmit() valida el formulario y construye el payload con el partido elegido.
-3. PredictionService.predict() envía POST /api/predictions con withCredentials: true.
+3. PredictionService.predict() envía POST /api/predictions y AuthInterceptor centraliza withCredentials.
 4. El backend responde con PredictionResponse y el componente lo almacena para renderizar la UI.
 
 Diagrama de secuencia:
@@ -235,7 +247,7 @@ sequenceDiagram
 	Pred->>Pred: onSubmit() valida formulario
 	Pred->>Pred: Construye PredictionRequest
 	Pred->>Service: predict(payload)
-	Service->>Backend: POST /api/predictions (withCredentials)
+	Service->>Backend: POST /api/predictions
 	Backend-->>Service: PredictionResponse
 	Service-->>Pred: PredictionResponse
 	Pred->>Pred: Guardar prediction para UI
@@ -280,7 +292,7 @@ Componentes involucrados:
 
 Descripción:
 1. El usuario pulsa “Log off”.
-2. PredictionComponent.logOff() llama a AuthService.logout() con credenciales.
+2. PredictionComponent.logOff() llama a AuthService.logout(); AuthInterceptor adjunta credenciales.
 3. El backend procesa el cierre de sesión y el componente reacciona reiniciando el ciclo de autenticación mediante startGoogleLogin().
 
 Diagrama de secuencia:
@@ -293,7 +305,7 @@ sequenceDiagram
 
 	Usuario->>Pred: Click en Log off
 	Pred->>Auth: logout()
-	Auth->>Backend: POST /api/auth/logout (withCredentials)
+	Auth->>Backend: POST /api/auth/logout
 	Backend-->>Auth: Sesion cerrada
 	Auth-->>Pred: Confirmacion logout
 	Pred->>Pred: startGoogleLogin() para reiniciar flujo
@@ -400,8 +412,8 @@ Riesgos:
 - se mantiene lógica de negocio ligera en el componente;
 - no existe aún una capa de use cases o state management explícito.
 
-### 6.3 Routing simple basado en páginas
-Decisión: definir rutas explícitas para /login y /predict, con redirecciones generales al login.
+### 6.3 Routing protegido con guard de autenticación
+Decisión: mantener rutas explícitas para /login y /predict, agregando auth guard en /predict y redirecciones generales al login.
 
 Ventajas:
 - navegación fácil de entender;
@@ -409,29 +421,32 @@ Ventajas:
 - compatible con un producto orientado a una experiencia lineal.
 
 Riesgos:
-- no hay guards de ruta ni protección declarativa de /predict;
-- la aplicación asume que la sesión ya se valida en la vista.
+- se requiere evitar bucles de redirección cuando falla sesión durante navegación;
+- la experiencia de usuario debe balancear seguridad (fail-closed) y mensajes claros de login.
 
-### 6.4 Autenticación basada en cookies y credenciales del navegador
-Decisión: usar requests con withCredentials: true para que las cookies de sesión se envíen al backend.
+### 6.4 Autenticación basada en cookies con interceptor centralizado
+Decisión: usar AuthInterceptor para adjuntar withCredentials en llamadas /api y centralizar manejo de 401/403.
 
 Ventajas:
 - coincide con la estrategia del backend para sesiones de navegador;
-- evita necesidad de token en memoria en este MVP.
+- elimina duplicación de configuración HTTP en cada servicio;
+- unifica el comportamiento frente a expiración de sesión.
 
 Riesgos:
 - implica mayor sensibilidad a CORS, SameSite y política de cookies del navegador;
-- cualquier cambio en la política de cookies puede romper todo el flujo.
+- cualquier cambio en la política de cookies puede romper todo el flujo;
+- requiere pruebas específicas para asegurar que no afecte llamadas no API.
 
-### 6.5 Estado local y reactividad en el componente
-Decisión: mantener estado de formulario, loading, mensaje de error y resultado en PredictionComponent y LoginComponent.
+### 6.5 Estado local y reactividad con helpers puros
+Decisión: mantener estado de formulario, loading, mensaje de error y resultado en componentes, pero extraer reglas de negocio y transformaciones a helpers reutilizables.
 
 Ventajas:
-- implementación sencilla y directa;
-- adecuado para una sola pantalla y un flujo corto.
+- reduce complejidad de componentes;
+- facilita pruebas unitarias aisladas de lógica de negocio;
+- mejora reutilización y mantenimiento.
 
 Riesgos:
-- escalado deficiente si se agregan más pantallas, estados compartidos o más reglas de negocio.
+- se debe mantener la frontera clara entre lógica de presentación y negocio para evitar duplicación futura.
 
 ### 6.6 Configuración dinámica de base URL para entornos
 Decisión: usar buildApiUrl() plus public/app-config.js para ajustar la URL del backend según el entorno.
@@ -450,26 +465,28 @@ Riesgos:
 - Flujo de usuario lineal y comprensible.
 - Integración con backend vía servicios bien delimitados.
 - Soporte para desarrollo local con proxy y runtime config para producción.
-- El componente de predicción encapsula la regla de negocio de selección de partidos en una manera legible.
+- Protección declarativa de /predict con guard y manejo transversal de auth con interceptor.
+- Reglas de negocio críticas de predicción desacopladas en helpers puros.
+- Cobertura de pruebas en crecimiento con unit tests e integración inicial para navegación protegida y expiración de sesión.
+- Cobertura de integración de UI para expiración de sesión en predicción (estado requiresLogin + enlace a login en 401/403).
+- Cobertura de integración para flujo de logout en predicción, incluyendo estado isLoggingOut, prevención de doble envío y reinicio de ciclo de autenticación en éxito/error.
+- Cobertura de integración encadenada del flujo auth completo en frontend: acceso bloqueado por guard, recuperación por returnUrl tras login y retorno a login por expiración de sesión (401) vía interceptor.
 
 ## 8. Debilidades y riesgos arquitectónicos
 
-- Falta de route guards para proteger /predict y evitar acceso no autorizado.
-- No existe intercambios centralizados de auth/error a través de un interceptor HTTP.
-- La lógica de presentación y de negocio está concentrada en los componentes.
+- Aún falta ampliar cobertura de pruebas en flujos críticos completos de autenticación/predicción.
 - El manejo de errores está disperso y depende de condiciones manuales en cada pantalla.
-- No existe estrategia formal de pruebas ni cobertura para los flujos críticos.
+- No existe aún suite de pruebas end-to-end para validar el recorrido completo navegador-login-backend.
 - El estado del formulario y del resultado puede crecer de forma poco mantenible si se agregan varias pantallas o flujos concurrentes.
 
 ## 9. Recomendaciones de evolución arquitectónica
 
-1. Introducir route guards para proteger /predict frente a sesiones no válidas.
-2. Crear un AuthInterceptor para centralizar withCredentials, headers y manejo de 401/403.
+1. Completar y mantener una suite de pruebas unitarias para auth.guard, auth.interceptor y helpers puros, con cobertura de casos de error.
+2. Extender las pruebas de integración existentes para cubrir login, sesión, matches y prediction de extremo a extremo dentro del frontend, validando redirecciones, expiración de sesión y feedback de UI asociado en más variantes de ruta/estado.
 3. Definir un store o servicio de estado compartido si la app crece su complejidad.
-4. Separar reglas de negocio y transformaciones de datos en servicios o helpers reutilizables.
-5. Añadir pruebas de integración para login, sesión, matches y prediction.
-6. Formalizar el contrato del backend mediante interfaces o schemas compartidos.
+4. Formalizar el contrato del backend mediante interfaces o schemas compartidos.
+5. Evaluar unificar aún más el manejo de mensajes UI de autenticación para reducir lógica condicional repetida en componentes.
 
 ## 10. Conclusión
 
-La arquitectura actual es simple, funcional y suficiente para un MVP. Está organizada en componentes standalone, servicios inyectables y modelos de dominio, con un flujo de usuario claro para autenticación, carga de partidos y predicción. Sin embargo, la solución está todavía muy cerca del producto y no ha incorporado mecanismos de protección, observabilidad o escalado que serían esperables en una evolución posterior.
+La arquitectura actual mantiene la simplicidad del MVP, pero ya incorpora pilares de hardening en frontend: guard de ruta, interceptor de autenticación y separación de reglas de negocio en helpers puros. El siguiente salto de madurez se centra en cobertura de pruebas (unitarias e integración), evolución del estado compartido y formalización de contratos para escalar con menor riesgo.
