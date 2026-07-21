@@ -22,7 +22,6 @@ This frontend now relies on backend endpoints for both auth and data. During loc
 Required endpoints:
 
 - `GET /api/auth/session` (with credentials) to validate login status.
-- `POST /api/matches` (with credentials) to load the match selector dropdown.
 - `POST /api/predictions` (with credentials) to request a prediction.
 
 The `POST /api/matches` request body must be:
