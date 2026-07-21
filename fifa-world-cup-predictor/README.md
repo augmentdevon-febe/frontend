@@ -22,14 +22,23 @@ This frontend now relies on backend endpoints for both auth and data. During loc
 Required endpoints:
 
 - `GET /api/auth/session` (with credentials) to validate login status.
-- `GET /api/matches` (with credentials) to load the match selector dropdown.
+- `POST /api/matches` (with credentials) to load the match selector dropdown.
 - `POST /api/predictions` (with credentials) to request a prediction.
 
-The `GET /api/matches` response must be a top-level JSON array with this shape per item:
+The `POST /api/matches` request body must be:
+
+```json
+{
+	"identifier": "liga_mx_invierno_2026"
+}
+```
+
+The `POST /api/matches` response must be a top-level JSON array with this shape per item:
 
 ```json
 [
 	{
+		"identifier": "liga_mx_invierno_2026",
 		"homeTeam": "Mexico",
 		"awayTeam": "South Africa",
 		"matchStage": "Group A",
@@ -94,8 +103,9 @@ sequenceDiagram
 			Login->>Router: Navigate to /predict
 			Router->>Predict: Instantiate PredictionComponent
 			Predict->>MatchesService: getMatches() on init
-			MatchesService->>Proxy: GET /api/matches (withCredentials)
-			Proxy->>Backend: Forward GET /api/matches
+			MatchesService->>Proxy: POST /api/matches (withCredentials)
+			Note right of MatchesService: Body { identifier: "liga_mx_invierno_2026" }
+			Proxy->>Backend: Forward POST /api/matches + identifier
 			Backend-->>Proxy: Match[] payload
 			Proxy-->>MatchesService: Return matches response
 			MatchesService-->>Predict: Match list for dropdown

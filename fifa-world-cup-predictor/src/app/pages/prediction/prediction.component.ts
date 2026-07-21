@@ -10,8 +10,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
+import { ErrorResponse } from '../../core/models/error-response.model';
 import { Match } from '../../core/models/match.model';
+import { MatchListRequest } from '../../core/models/match-list-request.model';
 import { PredictionResponse } from '../../core/models/prediction-response.model';
+import { appProperties } from '../../core/config/app-properties';
 import { AuthService } from '../../core/services/auth.service';
 import { MatchesService } from '../../core/services/matches.service';
 import { PredictionService } from '../../core/services/prediction.service';
@@ -34,13 +37,18 @@ import { PredictionService } from '../../core/services/prediction.service';
 })
 // Orchestrates match selection, prediction requests, and prediction result rendering.
 export class PredictionComponent implements OnInit, OnDestroy {
+  readonly branding = appProperties;
   // Centralized user-facing messages used across prediction flow.
   readonly pageMessages = [
     'Checking your authentication status...',
     'No active authenticated session. Please log in again.',
     'Unable to verify session right now. You can still try predicting; backend auth will be enforced.',
     'Loading matches from backend...',
-    'Unable to load World Cup matches right now. Please refresh and try again.',
+    'The match request is invalid. Please refresh and try again.',
+    'Your session expired. Please log in again to load matches.',
+    'You do not have permission to view matches.',
+    'Too many requests. Please wait a moment and try again.',
+    'Match service is temporarily unavailable. Please try again later.',
     'No upcoming matches available right now. Please check back later.',
     'Please select a match before predicting.',
     'The selected match is invalid. Please choose another one.',
@@ -55,17 +63,24 @@ export class PredictionComponent implements OnInit, OnDestroy {
     noAuthSession: 1,
     sessionCheckFailed: 2,
     loadingMatches: 3,
-    matchesLoadError: 4,
-    noUpcomingMatches: 5,
-    selectMatchError: 6,
-    invalidMatchError: 7,
-    sessionExpired: 8,
-    predictionFailed: 9,
-    unexpectedError: 10,
-    runningSimulation: 11
+    invalidMatchesRequest: 4,
+    matchesSessionExpired: 5,
+    matchesForbidden: 6,
+    matchesRateLimited: 7,
+    matchesUnavailable: 8,
+    noUpcomingMatches: 9,
+    selectMatchError: 10,
+    invalidMatchError: 11,
+    sessionExpired: 12,
+    predictionFailed: 13,
+    unexpectedError: 14,
+    runningSimulation: 15
   } as const;
 
   readonly predictionForm;
+  private readonly matchesListRequest: MatchListRequest = {
+    identifier: 'liga_mx_invierno_2026'
+  };
   private readonly ongoingMatchWindowMs = 3 * 60 * 60 * 1000;
 
   private readonly mexicoCityDateTimeFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -317,7 +332,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
     this.matchesError = '';
 
     this.matchesService
-      .getMatches()
+      .getMatches(this.matchesListRequest)
       .pipe(
         timeout(6000),
         finalize(() => {
@@ -343,8 +358,13 @@ export class PredictionComponent implements OnInit, OnDestroy {
             });
           this.cdr.detectChanges();
         },
-        error: () => {
-          this.matchesError = this.pageMessages[this.messageIndex.matchesLoadError];
+        error: (error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            this.requiresLogin = true;
+            this.isAuthenticated = false;
+          }
+
+          this.matchesError = this.toMatchesError(error);
           this.cdr.detectChanges();
         }
       });
@@ -415,5 +435,41 @@ export class PredictionComponent implements OnInit, OnDestroy {
     }
 
     return this.pageMessages[this.messageIndex.unexpectedError];
+  }
+
+  // Maps match-list backend failures to status-specific user-facing messages.
+  private toMatchesError(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return this.pageMessages[this.messageIndex.matchesUnavailable];
+    }
+
+    if (error.status === 400) {
+      return this.pageMessages[this.messageIndex.invalidMatchesRequest];
+    }
+
+    if (error.status === 401) {
+      return this.pageMessages[this.messageIndex.matchesSessionExpired];
+    }
+
+    if (error.status === 403) {
+      return this.pageMessages[this.messageIndex.matchesForbidden];
+    }
+
+    if (error.status === 429) {
+      return this.pageMessages[this.messageIndex.matchesRateLimited];
+    }
+
+    if (error.status === 500 || error.status === 503) {
+      return this.pageMessages[this.messageIndex.matchesUnavailable];
+    }
+
+    const errorResponse = error.error as Partial<ErrorResponse> | null;
+    const backendMessage = errorResponse?.error?.message;
+
+    if (typeof backendMessage === 'string' && backendMessage.trim()) {
+      return backendMessage;
+    }
+
+    return this.pageMessages[this.messageIndex.matchesUnavailable];
   }
 }

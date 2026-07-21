@@ -1,9 +1,9 @@
 <main class="page world-cup-page">
   <section class="panel world-cup-panel">
     <header class="hero">
-      <p class="tournament-eyebrow">Road To The Final 2026</p>
+      <p class="tournament-eyebrow">{{ branding.tournamentEyebrow }}</p>
       <div class="hero-title-row">
-        <h1 class="title">FIFA World Cup Predictor</h1>
+        <h1 class="title">{{ branding.appTitle }}</h1>
         <button
           *ngIf="isAuthenticated"
           mat-stroked-button
@@ -15,7 +15,7 @@
           {{ isLoggingOut ? 'Logging off...' : 'Log off' }}
         </button>
       </div>
-      <p class="subtitle">Pick a match, run the model by clicking the "Predict result" button, and see the Open AI expected result.</p>
+      <p class="subtitle">{{ branding.predictionSubtitle }}</p>
     </header>
 
     <section class="status-stack" aria-live="polite">
@@ -95,7 +95,7 @@
         </div>
       </div>
 
-      <section class="bracket-panel" aria-label="World Cup bracket snapshot">
+      <section class="bracket-panel" [attr.aria-label]="branding.bracketAriaLabel">
         <div class="bracket-grid">
           <p class="bracket-node"></p>
           <p class="bracket-arrow" aria-hidden="true">></p>

@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Match } from '../models/match.model';
+import { MatchListRequest } from '../models/match-list-request.model';
 import { buildApiUrl } from './api-url';
 
 @Injectable({
@@ -12,8 +13,8 @@ export class MatchesService {
 
   constructor(private readonly http: HttpClient) {}
 
-  getMatches(): Observable<Match[]> {
-    return this.http.get<Match[]>(this.matchesUrl, {
+  getMatches(request: MatchListRequest): Observable<Match[]> {
+    return this.http.post<Match[]>(this.matchesUrl, request, {
       withCredentials: true
     });
   }

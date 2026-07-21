@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { appProperties } from '../../core/config/app-properties';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { AuthService } from '../../core/services/auth.service';
 })
 // Handles same-tab Google login redirect, session checks, and navigation to prediction page.
 export class LoginComponent implements OnInit {
+  readonly branding = appProperties;
   isCheckingSession = false;
   isLoginInProgress = false;
   loginError = '';

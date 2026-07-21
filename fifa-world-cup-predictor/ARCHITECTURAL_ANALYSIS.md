@@ -127,7 +127,7 @@ Componentes involucrados:
 
 Descripción:
 1. PredictionComponent.ngOnInit() invoca loadMatches() y checkAuthentication().
-2. MatchesService.getMatches() consulta /api/matches con credenciales.
+2. MatchesService.getMatches() invoca POST /api/matches con withCredentials: true y body { identifier: "liga_mx_invierno_2026" }.
 3. PredictionComponent filtra partidos que aún estén disponibles en una ventana de 3 horas desde el kickoff, usando una clave temporal calculada en America/Mexico_City.
 4. El listado se ordena cronológicamente para formar el selector.
 
@@ -185,7 +185,8 @@ Componentes involucrados:
 Descripción:
 1. LoginComponent transforma errores de session check en mensajes de usuario específicos para 401/403, 0 y otros casos.
 2. PredictionComponent convierte errores de predicción y carga de matches en mensajes amigables y estados de UI.
-3. El componente centraliza mensajes operativos para no exponer detalles técnicos del backend.
+3. En carga de matches, el componente mapea HTTP 400, 401, 403, 429 y 500/503 a mensajes específicos para request inválido, sesión expirada, permisos, rate-limit y servicio no disponible.
+4. El componente centraliza mensajes operativos para no exponer detalles técnicos del backend.
 
 ### Flujo 9 — Configuración dinámica de runtime para producción
 Nombre: Resolución de URL de backend en runtime
