@@ -8,13 +8,13 @@ Este proyecto es un frontend Angular 22 implementado con componentes standalone,
 
 El sistema soporta tres responsabilidades principales:
 1. iniciar y validar una sesión de usuario vía autenticación externa con Google;
-2. cargar partidos disponibles y filtrar los que siguen siendo predecibles en una ventana temporal razonable;
+2. cargar partidos pendientes y filtrar los que ya tienen un resultado 
 3. enviar una solicitud de predicción y renderizar un resultado previsto con una explicación textual.
 
 ## 3. Mapa de componentes y responsabilidades
 
 ### 3.1 Arranque y shell de la aplicación
-- AppComponent: componente raíz que actúa como shell y renderiza el router outlet.
+- AppComponent: componente raíz.
 - main.ts: punto de entrada de Angular; ejecuta bootstrapApplication con appConfig.
 - app.config.ts: configura providers globales de Angular, incluyendo router e HttpClient.
 
@@ -89,6 +89,26 @@ Descripción:
 3. AppComponent renderiza el RouterOutlet como shell único.
 4. El router resuelve la ruta inicial y redirige a /login cuando la URL está vacía.
 
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	participant Main as main.ts
+	participant AppCfg as app.config.ts
+	participant App as AppComponent
+	participant Router as Router
+
+	Main->>AppCfg: bootstrapApplication(AppComponent, appConfig)
+	AppCfg->>Router: provideRouter(routes)
+	AppCfg->>Main: provideHttpClient()
+	Main->>App: Render shell principal
+	App->>Router: Resolver ruta inicial
+	alt URL vacia
+		Router-->>App: Redirigir a /login
+	else URL definida
+		Router-->>App: Cargar ruta solicitada
+	end
+```
+
 ### Flujo 2 — Inicio de autenticación externa
 Nombre: Redirección a Google Login
 Componentes involucrados:
@@ -102,6 +122,23 @@ Descripción:
 2. LoginComponent.startLogin() limpia el estado local y marca el login como en progreso.
 3. AuthService.startGoogleLogin() construye la URL del backend con redirect_uri, redirectUrl y returnUrl apuntando a /predict.
 4. El navegador ejecuta una redirección completa al endpoint de login externo.
+
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	actor Usuario
+	participant Login as LoginComponent
+	participant Auth as AuthService
+	participant Browser as window.location
+	participant Backend as /api/auth/login
+
+	Usuario->>Login: Click en Login with Google
+	Login->>Login: startLogin() limpia estado
+	Login->>Auth: startGoogleLogin()
+	Auth->>Auth: Construye URL con returnUrl=/predict
+	Auth->>Browser: Asigna location.href
+	Browser->>Backend: GET /api/auth/login?...redirect
+```
 
 ### Flujo 3 — Verificación de sesión previa
 Nombre: Validación de sesión activa en el arranque
@@ -117,6 +154,28 @@ Descripción:
 3. Si el backend responde con authenticated: true, el componente navega a /predict.
 4. Si el backend retorna 401/403 o no está autenticado, el flujo se mantiene en login y muestra mensaje de login requerido.
 
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	participant Login as LoginComponent
+	participant Auth as AuthService
+	participant Backend as /api/auth/session
+	participant Router as Router
+
+	Login->>Login: ngOnInit()
+	Login->>Auth: checkSessionAndNavigate(false)
+	Auth->>Backend: GET /api/auth/session (withCredentials)
+	alt authenticated: true
+		Backend-->>Auth: 200 { authenticated: true }
+		Auth-->>Login: Sesion valida
+		Login->>Router: navigate('/predict')
+	else 401/403 o no autenticado
+		Backend-->>Auth: Error o { authenticated: false }
+		Auth-->>Login: Sesion invalida
+		Login->>Login: Mostrar mensaje de login requerido
+	end
+```
+
 ### Flujo 4 — Carga del catálogo de partidos
 Nombre: Carga y filtrado de partidos disponibles
 Componentes involucrados:
@@ -130,6 +189,24 @@ Descripción:
 2. MatchesService.getMatches() consulta /api/matches con credenciales.
 3. PredictionComponent filtra partidos que aún estén disponibles en una ventana de 3 horas desde el kickoff, usando una clave temporal calculada en America/Mexico_City.
 4. El listado se ordena cronológicamente para formar el selector.
+
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	participant Pred as PredictionComponent
+	participant Matches as MatchesService
+	participant Backend as /api/matches
+	participant UI as Selector de partidos
+
+	Pred->>Pred: ngOnInit()
+	Pred->>Matches: loadMatches()
+	Matches->>Backend: GET /api/matches (withCredentials)
+	Backend-->>Matches: Lista de partidos
+	Matches-->>Pred: Match[]
+	Pred->>Pred: Filtrar ventana 3h (America/Mexico_City)
+	Pred->>Pred: Ordenar por matchDate asc
+	Pred-->>UI: Render opciones disponibles
+```
 
 ### Flujo 5 — Envío de la predicción
 Nombre: Solicitud de predicción al backend
@@ -146,6 +223,24 @@ Descripción:
 3. PredictionService.predict() envía POST /api/predictions con withCredentials: true.
 4. El backend responde con PredictionResponse y el componente lo almacena para renderizar la UI.
 
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	actor Usuario
+	participant Pred as PredictionComponent
+	participant Service as PredictionService
+	participant Backend as /api/predictions
+
+	Usuario->>Pred: Click en Predict Result
+	Pred->>Pred: onSubmit() valida formulario
+	Pred->>Pred: Construye PredictionRequest
+	Pred->>Service: predict(payload)
+	Service->>Backend: POST /api/predictions (withCredentials)
+	Backend-->>Service: PredictionResponse
+	Service-->>Pred: PredictionResponse
+	Pred->>Pred: Guardar prediction para UI
+```
+
 ### Flujo 6 — Renderizado del resultado previsto
 Nombre: Presentación del resultado y explicación
 Componentes involucrados:
@@ -160,6 +255,22 @@ Descripción:
 3. El template muestra el scoreboard, el resultado y la explicación del modelo.
 4. La vista también incluye una representación visual tipo bracket para reforzar el storytelling del producto.
 
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	participant Pred as PredictionComponent
+	participant Model as PredictionResponse
+	participant Template as prediction.component.html
+	participant Styles as prediction.component.css
+	participant Usuario
+
+	Pred->>Model: Asignar prediction
+	Pred->>Pred: Derivar etiquetas de resultado
+	Pred->>Template: Exponer estado para render
+	Template->>Styles: Aplicar estilos scoreboard/bracket
+	Template-->>Usuario: Mostrar ganador, score y explicacion
+```
+
 ### Flujo 7 — Cierre de sesión
 Nombre: Logout y reinicio del ciclo de autenticación
 Componentes involucrados:
@@ -171,6 +282,22 @@ Descripción:
 1. El usuario pulsa “Log off”.
 2. PredictionComponent.logOff() llama a AuthService.logout() con credenciales.
 3. El backend procesa el cierre de sesión y el componente reacciona reiniciando el ciclo de autenticación mediante startGoogleLogin().
+
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	actor Usuario
+	participant Pred as PredictionComponent
+	participant Auth as AuthService
+	participant Backend as /api/auth/logout
+
+	Usuario->>Pred: Click en Log off
+	Pred->>Auth: logout()
+	Auth->>Backend: POST /api/auth/logout (withCredentials)
+	Backend-->>Auth: Sesion cerrada
+	Auth-->>Pred: Confirmacion logout
+	Pred->>Pred: startGoogleLogin() para reiniciar flujo
+```
 
 ### Flujo 8 — Manejo de errores transversales
 Nombre: Gestión de fallos de red, auth y validación de formulario
@@ -187,6 +314,33 @@ Descripción:
 2. PredictionComponent convierte errores de predicción y carga de matches en mensajes amigables y estados de UI.
 3. El componente centraliza mensajes operativos para no exponer detalles técnicos del backend.
 
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	participant Login as LoginComponent
+	participant Pred as PredictionComponent
+	participant Services as Auth/Matches/Prediction Services
+	participant Backend
+	participant UI as Mensajes UI
+
+	Login->>Services: checkSession()
+	Pred->>Services: loadMatches()/predict()
+	Services->>Backend: Llamadas HTTP
+	alt Error 401/403
+		Backend-->>Services: Unauthorized/Forbidden
+		Services-->>Login: HttpErrorResponse
+		Login-->>UI: Mostrar login requerido
+	else Error de red (status 0)
+		Backend-->>Services: Network error
+		Services-->>Pred: HttpErrorResponse
+		Pred-->>UI: Mostrar fallo de conectividad
+	else Otros errores
+		Backend-->>Services: Error generico
+		Services-->>Pred: HttpErrorResponse
+		Pred-->>UI: Mensaje amigable sin detalles tecnicos
+	end
+```
+
 ### Flujo 9 — Configuración dinámica de runtime para producción
 Nombre: Resolución de URL de backend en runtime
 Componentes involucrados:
@@ -199,6 +353,26 @@ Descripción:
 1. buildApiUrl() lee window.__APP_CONFIG__.API_BASE_URL si existe.
 2. Si no existe, la implementación cae al path relativo para desarrollo local o al proxy.
 3. Render inyecta la variable API_BASE_URL durante el build de producción para construir URLs correctas del backend.
+
+Diagrama de secuencia:
+```mermaid
+sequenceDiagram
+	participant Deploy as render.yaml
+	participant Config as public/app-config.js
+	participant Url as buildApiUrl() en api-url.ts
+	participant App as Servicios HTTP
+	participant Backend
+
+	Deploy->>Config: Inyecta API_BASE_URL en build
+	App->>Url: Solicita URL para endpoint
+	Url->>Config: Lee window.__APP_CONFIG__.API_BASE_URL
+	alt API_BASE_URL existe
+		Url-->>App: Devuelve URL absoluta de backend
+	else API_BASE_URL no existe
+		Url-->>App: Devuelve path relativo/proxy
+	end
+	App->>Backend: Consume endpoint con URL resuelta
+```
 
 ## 6. Decisiones arquitectónicas clave
 
