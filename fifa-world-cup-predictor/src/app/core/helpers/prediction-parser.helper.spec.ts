@@ -36,6 +36,31 @@ describe('prediction-parser.helper', () => {
     expect(formatPredictionResultLabel({ ...basePrediction, result: 'DRAW' })).toBe('DRAW');
   });
 
+  it('falls back safely for unexpected result codes', () => {
+    const prediction: PredictionResponse = {
+      ...basePrediction,
+      result: 'PENALTY_SHOOTOUT'
+    };
+
+    expect(getProjectedWinner(prediction)).toBe('Mexico');
+    expect(formatPredictionResultLabel(prediction)).toBe('PENALTY_SHOOTOUT');
+  });
+
+  it('handles incomplete payload fields without throwing', () => {
+    const partialPrediction = {
+      homeTeam: 'Mexico',
+      awayTeam: 'Brazil',
+      predictedScore: '1-1',
+      result: '',
+      explanation: ''
+    } as PredictionResponse;
+
+    expect(() => getProjectedWinner(partialPrediction)).not.toThrow();
+    expect(() => formatPredictionResultLabel(partialPrediction)).not.toThrow();
+    expect(getProjectedWinner(partialPrediction)).toBe('Mexico');
+    expect(formatPredictionResultLabel(partialPrediction)).toBe('');
+  });
+
   it('maps 401/403 to session-expired message', () => {
     const message = mapPredictionErrorMessage(
       new HttpErrorResponse({ status: 401 }),

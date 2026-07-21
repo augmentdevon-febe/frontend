@@ -53,6 +53,18 @@ describe('authGuard', () => {
     expect(router.serializeUrl(result as UrlTree)).toBe('/login?returnUrl=%2Fpredict');
   });
 
+  it('preserves query params and fragment in returnUrl', async () => {
+    authServiceMock.getSession.mockReturnValue(of({ authenticated: false }));
+
+    const result = await runGuard('/predict?stage=group#top');
+    const router = TestBed.inject(Router);
+
+    expect(result instanceof UrlTree).toBe(true);
+    expect(router.serializeUrl(result as UrlTree)).toBe(
+      '/login?returnUrl=%2Fpredict%3Fstage%3Dgroup%23top'
+    );
+  });
+
   it('redirects to login when session check fails', async () => {
     authServiceMock.getSession.mockReturnValue(
       throwError(() => new Error('session unavailable'))

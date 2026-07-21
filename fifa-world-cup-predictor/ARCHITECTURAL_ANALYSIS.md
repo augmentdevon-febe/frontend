@@ -26,6 +26,8 @@ El sistema soporta tres responsabilidades principales:
 - AuthService: encapsula el inicio de login con Google, la comprobación de sesión y el logout, usando llamadas HTTP con credenciales para mantener la sesión del backend.
 - MatchesService: encapsula la consulta de partidos desde el backend.
 - PredictionService: encapsula el envío del payload de predicción al backend.
+- AppStateService: estado compartido (Signals) para auth/login/predicción entre componentes.
+- UiMessageService: catálogo central y mapeo consistente de mensajes UI para auth/sesión/predicción.
 - buildApiUrl(): helper de infraestructura que resuelve la URL de backend en runtime y en desarrollo local.
 
 ### 3.4 Modelos de dominio y contratos de datos
@@ -471,22 +473,20 @@ Riesgos:
 - Cobertura de integración de UI para expiración de sesión en predicción (estado requiresLogin + enlace a login en 401/403).
 - Cobertura de integración para flujo de logout en predicción, incluyendo estado isLoggingOut, prevención de doble envío y reinicio de ciclo de autenticación en éxito/error.
 - Cobertura de integración encadenada del flujo auth completo en frontend: acceso bloqueado por guard, recuperación por returnUrl tras login y retorno a login por expiración de sesión (401) vía interceptor.
+- Mensajería UI de autenticación/predicción centralizada mediante UiMessageService para reducir duplicación entre componentes.
 
 ## 8. Debilidades y riesgos arquitectónicos
 
 - Aún falta ampliar cobertura de pruebas en flujos críticos completos de autenticación/predicción.
-- El manejo de errores está disperso y depende de condiciones manuales en cada pantalla.
-- No existe aún suite de pruebas end-to-end para validar el recorrido completo navegador-login-backend.
-- El estado del formulario y del resultado puede crecer de forma poco mantenible si se agregan varias pantallas o flujos concurrentes.
+- Aunque ya existe estado compartido con AppStateService, su crecimiento puede volverse complejo sin convención estricta de slices/selectores y reglas de actualización.
 
 ## 9. Recomendaciones de evolución arquitectónica
 
-1. Completar y mantener una suite de pruebas unitarias para auth.guard, auth.interceptor y helpers puros, con cobertura de casos de error.
-2. Extender las pruebas de integración existentes para cubrir login, sesión, matches y prediction de extremo a extremo dentro del frontend, validando redirecciones, expiración de sesión y feedback de UI asociado en más variantes de ruta/estado.
-3. Definir un store o servicio de estado compartido si la app crece su complejidad.
-4. Formalizar el contrato del backend mediante interfaces o schemas compartidos.
-5. Evaluar unificar aún más el manejo de mensajes UI de autenticación para reducir lógica condicional repetida en componentes.
+1. Evolucionar AppStateService hacia un modelo de estado por slices (auth/prediction/ui) con selectores y transiciones más explícitas si la app incrementa su complejidad.
+2. Formalizar el contrato del backend mediante interfaces o schemas compartidos.
+3. Extender UiMessageService con prioridades/severidad y estrategia i18n por claves para escalar la consistencia de UX.
+
 
 ## 10. Conclusión
 
-La arquitectura actual mantiene la simplicidad del MVP, pero ya incorpora pilares de hardening en frontend: guard de ruta, interceptor de autenticación y separación de reglas de negocio en helpers puros. El siguiente salto de madurez se centra en cobertura de pruebas (unitarias e integración), evolución del estado compartido y formalización de contratos para escalar con menor riesgo.
+La arquitectura actual mantiene la simplicidad del MVP. El siguiente salto de madurez se centra en aumentar la cobertura de pruebas (unitarias e integración), evolución del estado compartido y formalización de contratos para escalar con menor riesgo.

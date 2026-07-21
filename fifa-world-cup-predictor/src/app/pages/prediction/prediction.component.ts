@@ -20,8 +20,10 @@ import {
 } from '../../core/helpers/prediction-parser.helper';
 import { getTeamInitials as buildTeamInitials } from '../../core/helpers/team-badge.helper';
 import { AuthService } from '../../core/services/auth.service';
+import { AppStateService } from '../../core/services/app-state.service';
 import { MatchesService } from '../../core/services/matches.service';
 import { PredictionService } from '../../core/services/prediction.service';
+import { UiMessageService } from '../../core/services/ui-message.service';
 
 @Component({
   selector: 'app-prediction',
@@ -39,55 +41,17 @@ import { PredictionService } from '../../core/services/prediction.service';
   templateUrl: './prediction.component.html',
   styleUrl: './prediction.component.css'
 })
-// Orchestrates match selection, prediction requests, and prediction result rendering.
+/**
+ * Component objective:
+ * - Provide the main match selection and prediction experience.
+ * - Manage prediction execution and result rendering.
+ * - Control session-related UX states (auth, requiresLogin, logout).
+ *
+ * Primary responsibility:
+ * - Orchestrate UI interaction and delegate integration/network concerns to services.
+ */
 export class PredictionComponent implements OnInit, OnDestroy {
-  // Centralized user-facing messages used across prediction flow.
-  readonly pageMessages = [
-    'Checking your authentication status...',
-    'No active authenticated session. Please log in again.',
-    'Unable to verify session right now. You can still try predicting; backend auth will be enforced.',
-    'Loading matches from backend...',
-    'Unable to load World Cup matches right now. Please refresh and try again.',
-    'No upcoming matches available right now. Please check back later.',
-    'Please select a match before predicting.',
-    'The selected match is invalid. Please choose another one.',
-    'Your session expired or is not authenticated. Please log in again.',
-    'Prediction request failed. Please try again in a moment.',
-    'An unexpected error occurred while predicting the match.',
-    'Running simulation...'
-  ] as const;
-
-  private readonly messageIndex = {
-    checkingAuth: 0,
-    noAuthSession: 1,
-    sessionCheckFailed: 2,
-    loadingMatches: 3,
-    matchesLoadError: 4,
-    noUpcomingMatches: 5,
-    selectMatchError: 6,
-    invalidMatchError: 7,
-    sessionExpired: 8,
-    predictionFailed: 9,
-    unexpectedError: 10,
-    runningSimulation: 11
-  } as const;
-
   readonly predictionForm;
-
-  matches: Match[] = [];
-  prediction: PredictionResponse | null = null;
-
-  isLoadingMatches = true;
-  isCheckingAuth = true;
-  isPredicting = false;
-  isLoggingOut = false;
-  isAuthenticated = false;
-
-  authStatusMessage = 'Checking your authentication status...';
-  matchesError = '';
-  formError = '';
-  predictionError = '';
-  requiresLogin = false;
 
   private lastPredictedMatchIndex: number | null = null;
   private matchSelectionSub?: Subscription;
@@ -96,13 +60,111 @@ export class PredictionComponent implements OnInit, OnDestroy {
     private readonly formBuilder: FormBuilder,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
+    private readonly appState: AppStateService,
     private readonly authService: AuthService,
     private readonly matchesService: MatchesService,
-    private readonly predictionService: PredictionService
+    private readonly predictionService: PredictionService,
+    private readonly uiMessages: UiMessageService
   ) {
     this.predictionForm = this.formBuilder.group({
       matchIndex: ['', Validators.required]
     });
+  }
+
+  get matches(): Match[] {
+    return this.appState.matchesSig();
+  }
+
+  set matches(value: Match[]) {
+    this.appState.setMatches(value);
+  }
+
+  get prediction(): PredictionResponse | null {
+    return this.appState.predictionSig();
+  }
+
+  set prediction(value: PredictionResponse | null) {
+    this.appState.setPrediction(value);
+  }
+
+  get isLoadingMatches(): boolean {
+    return this.appState.isLoadingMatchesSig();
+  }
+
+  set isLoadingMatches(value: boolean) {
+    this.appState.setIsLoadingMatches(value);
+  }
+
+  get isCheckingAuth(): boolean {
+    return this.appState.isCheckingAuthSig();
+  }
+
+  set isCheckingAuth(value: boolean) {
+    this.appState.setIsCheckingAuth(value);
+  }
+
+  get isPredicting(): boolean {
+    return this.appState.isPredictingSig();
+  }
+
+  set isPredicting(value: boolean) {
+    this.appState.setIsPredicting(value);
+  }
+
+  get isLoggingOut(): boolean {
+    return this.appState.isLoggingOutSig();
+  }
+
+  set isLoggingOut(value: boolean) {
+    this.appState.setIsLoggingOut(value);
+  }
+
+  get isAuthenticated(): boolean {
+    return this.appState.isAuthenticatedSig();
+  }
+
+  set isAuthenticated(value: boolean) {
+    this.appState.setIsAuthenticated(value);
+  }
+
+  get authStatusMessage(): string {
+    return this.appState.authStatusMessageSig();
+  }
+
+  set authStatusMessage(value: string) {
+    this.appState.setAuthStatusMessage(value);
+  }
+
+  get matchesError(): string {
+    return this.appState.matchesErrorSig();
+  }
+
+  set matchesError(value: string) {
+    this.appState.setMatchesError(value);
+  }
+
+  get formError(): string {
+    return this.appState.formErrorSig();
+  }
+
+  set formError(value: string) {
+    this.appState.setFormError(value);
+  }
+
+  get predictionError(): string {
+    return this.appState.predictionErrorSig();
+  }
+
+  set predictionError(value: string) {
+    this.appState.setPredictionError(value);
+  }
+
+  get requiresLogin(): boolean {
+    return this.appState.requiresLoginSig();
+  }
+
+  set requiresLogin(value: boolean) {
+    this.appState.setRequiresLogin(value);
   }
 
   // Initializes form/watchers and requests current auth state + match list.
@@ -153,14 +215,14 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
     if (this.predictionForm.invalid) {
       this.predictionForm.markAllAsTouched();
-      this.formError = this.pageMessages[this.messageIndex.selectMatchError];
+      this.formError = this.uiMessages.messages.prediction.selectMatchError;
       return;
     }
 
     const selectedMatch = this.getSelectedMatch();
     const selectedMatchIndex = Number(this.predictionForm.value.matchIndex);
     if (!selectedMatch) {
-      this.formError = this.pageMessages[this.messageIndex.invalidMatchError];
+      this.formError = this.uiMessages.messages.prediction.invalidMatchError;
       return;
     }
 
@@ -276,7 +338,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => {
-          this.matchesError = this.pageMessages[this.messageIndex.matchesLoadError];
+          this.matchesError = this.uiMessages.messages.prediction.matchesLoadError;
           this.cdr.detectChanges();
         }
       });
@@ -285,7 +347,7 @@ export class PredictionComponent implements OnInit, OnDestroy {
   // Verifies current auth session to control UI messaging and login redirect prompts.
   private checkAuthentication(): void {
     this.isCheckingAuth = true;
-    this.authStatusMessage = this.pageMessages[this.messageIndex.checkingAuth];
+    this.authStatusMessage = this.uiMessages.messages.prediction.checkingAuth;
 
     this.authService
       .getSession()
@@ -296,13 +358,13 @@ export class PredictionComponent implements OnInit, OnDestroy {
           this.isAuthenticated = !!session.authenticated;
           this.authStatusMessage = this.isAuthenticated
             ? ''
-            : this.pageMessages[this.messageIndex.noAuthSession];
+            : this.uiMessages.messages.prediction.noAuthSession;
           this.cdr.detectChanges();
         },
         error: () => {
           this.isCheckingAuth = false;
           this.isAuthenticated = false;
-          this.authStatusMessage = this.pageMessages[this.messageIndex.sessionCheckFailed];
+          this.authStatusMessage = this.uiMessages.messages.prediction.sessionCheckFailed;
           this.cdr.detectChanges();
         }
       });
@@ -322,10 +384,6 @@ export class PredictionComponent implements OnInit, OnDestroy {
 
   // Normalizes backend/network failures into user-facing prediction error messages.
   private toPredictionError(error: unknown): string {
-    return mapPredictionErrorMessage(error, {
-      sessionExpired: this.pageMessages[this.messageIndex.sessionExpired],
-      predictionFailed: this.pageMessages[this.messageIndex.predictionFailed],
-      unexpectedError: this.pageMessages[this.messageIndex.unexpectedError]
-    });
+    return mapPredictionErrorMessage(error, this.uiMessages.predictionErrorSet());
   }
 }

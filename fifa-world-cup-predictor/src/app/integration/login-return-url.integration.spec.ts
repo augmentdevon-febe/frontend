@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { By } from '@angular/platform-browser';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, RouterOutlet, Routes } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AuthService } from '../core/services/auth.service';
 import { LoginComponent } from '../pages/login/login.component';
 
@@ -93,5 +94,22 @@ describe('Integration: login returnUrl flow', () => {
     await fixture.whenStable();
 
     expect(router.url).toBe('/predict?from=guard');
+  });
+
+  it('shows temporary session failure message on network error (status 0)', async () => {
+    authServiceMock.getSession.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 0, statusText: 'Network Error' }))
+    );
+
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(ShellComponent);
+
+    await router.navigateByUrl('/login');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const errorText = (fixture.nativeElement as HTMLElement).querySelector('.message-error')?.textContent;
+    expect(errorText).toContain('Session check failed temporarily. Please try logging in again.');
   });
 });

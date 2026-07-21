@@ -61,6 +61,15 @@ describe('Integration: guarded routing + auth interceptor', () => {
     expect(router.url).toBe('/login?returnUrl=%2Fpredict');
   });
 
+  it('redirects unauthenticated navigation preserving query params in returnUrl', async () => {
+    authServiceMock.getSession.mockReturnValue(of({ authenticated: false }));
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/predict?stage=group');
+
+    expect(router.url).toBe('/login?returnUrl=%2Fpredict%3Fstage%3Dgroup');
+  });
+
   it('redirects to /login when guard session check fails', async () => {
     authServiceMock.getSession.mockReturnValue(
       throwError(() => new Error('session request failed'))

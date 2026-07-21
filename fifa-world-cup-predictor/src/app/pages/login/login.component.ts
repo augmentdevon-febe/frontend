@@ -6,6 +6,8 @@ import { finalize, timeout } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
+import { AppStateService } from '../../core/services/app-state.service';
+import { UiMessageService } from '../../core/services/ui-message.service';
 
 @Component({
   selector: 'app-login',
@@ -13,32 +15,49 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
-// Handles same-tab Google login redirect, session checks, and navigation to prediction page.
+/**
+ * Component objective:
+ * - Serve as the user's authentication entry point.
+ * - Verify existing session state when the view loads.
+ * - Start the external login flow while preserving a safe returnUrl.
+ *
+ * Primary responsibility:
+ * - Orchestrate login UX state (loading/errors) and navigation to prediction.
+ */
 export class LoginComponent implements OnInit {
-  isCheckingSession = false;
-  isLoginInProgress = false;
-  loginError = '';
-
-  // Centralized user-facing messages used across login flow.
-  readonly pageMessages = [
-    'Please log in with Google to continue.',
-    'Session check failed temporarily. Please try logging in again.',
-    'Session check timed out or failed. Click Login to continue to Google Login page.'
-  ] as const;
-
-  private readonly messageIndex = {
-    loginRequired: 0,
-    temporarySessionFailure: 1,
-    sessionCheckFailed: 2
-  } as const;
-
   private isSessionRequestInFlight = false;
 
   constructor(
+    private readonly appState: AppStateService,
     private readonly authService: AuthService,
+    private readonly uiMessages: UiMessageService,
     private readonly route: ActivatedRoute,
     private readonly router: Router
   ) {}
+
+  get isCheckingSession(): boolean {
+    return this.appState.isCheckingSessionSig();
+  }
+
+  set isCheckingSession(value: boolean) {
+    this.appState.setIsCheckingSession(value);
+  }
+
+  get isLoginInProgress(): boolean {
+    return this.appState.isLoginInProgressSig();
+  }
+
+  set isLoginInProgress(value: boolean) {
+    this.appState.setIsLoginInProgress(value);
+  }
+
+  get loginError(): string {
+    return this.appState.loginErrorSig();
+  }
+
+  set loginError(value: string) {
+    this.appState.setLoginError(value);
+  }
 
   // Performs an initial session check on page load to skip login when already authenticated.
   ngOnInit(): void {
@@ -83,33 +102,24 @@ export class LoginComponent implements OnInit {
       .subscribe({
       next: (session) => {
         if (session.authenticated) {
+          this.appState.setIsAuthenticated(true);
           this.isLoginInProgress = false;
           this.router.navigateByUrl(this.getSafeReturnPath());
           return;
         }
 
+        this.appState.setIsAuthenticated(false);
+
         if (!this.isLoginInProgress) {
-          this.loginError = this.pageMessages[this.messageIndex.loginRequired];
+          this.loginError = this.uiMessages.messages.login.required;
         }
       },
       error: (error: unknown) => {
-        // Handle specific HTTP errors that indicate unauthenticated state without showing generic error messages.  
-        // Allowing the UI to prompt for login without alarming users 
-        // with technical error details when they are not logged in.
         if (error instanceof HttpErrorResponse && [401, 403].includes(error.status)) {
-          this.isLoginInProgress = false;
-          this.loginError = this.pageMessages[this.messageIndex.loginRequired];
-          return;
+          this.appState.setIsAuthenticated(false);
         }
-
-        if (error instanceof HttpErrorResponse && error.status === 0) {
-          this.isLoginInProgress = false;
-          this.loginError = this.pageMessages[this.messageIndex.temporarySessionFailure];
-          return;
-        }
-
         this.isLoginInProgress = false;
-        this.loginError = this.pageMessages[this.messageIndex.sessionCheckFailed];
+        this.loginError = this.uiMessages.mapLoginSessionCheckError(error);
       }
     });
   }

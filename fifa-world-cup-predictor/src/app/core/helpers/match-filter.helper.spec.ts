@@ -46,4 +46,17 @@ describe('match-filter.helper', () => {
 
     expect(available).toHaveLength(1);
   });
+
+  it('includes matches at exact window boundary and excludes those already outside', () => {
+    const now = new Date('2026-07-21T12:00:00.000Z');
+    const exactBoundaryKickoff = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+    const outsideBoundaryKickoff = new Date(now.getTime() - 3 * 60 * 60 * 1000 - 1000).toISOString();
+
+    const available = getAvailableMatches([
+      makeMatch('Boundary Team', exactBoundaryKickoff),
+      makeMatch('Expired Team', outsideBoundaryKickoff)
+    ], now, 3 * 60 * 60 * 1000);
+
+    expect(available.map((match) => match.homeTeam)).toEqual(['Boundary Team']);
+  });
 });

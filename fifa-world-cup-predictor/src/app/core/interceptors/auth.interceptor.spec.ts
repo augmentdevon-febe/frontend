@@ -59,6 +59,21 @@ describe('authInterceptor', () => {
     expect(capturedWithCredentials).toBe(false);
   });
 
+  it('adds withCredentials for absolute API URLs', async () => {
+    const request = new HttpRequest('GET', 'https://backend.example.com/api/matches');
+    let capturedWithCredentials = false;
+    const next = ((req: HttpRequest<unknown>) => {
+      capturedWithCredentials = req.withCredentials;
+      return of(new HttpResponse({ status: 200, body: [] }));
+    }) as HttpHandlerFn;
+
+    await firstValueFrom(
+      TestBed.runInInjectionContext(() => authInterceptor(request, next))
+    );
+
+    expect(capturedWithCredentials).toBe(true);
+  });
+
   it('navigates to login on 401 for api requests', async () => {
     const request = new HttpRequest('GET', '/api/auth/session');
     const next: HttpHandlerFn = () =>

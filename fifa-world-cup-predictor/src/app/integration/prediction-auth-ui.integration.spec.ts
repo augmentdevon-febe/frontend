@@ -97,4 +97,25 @@ describe('Integration: prediction auth-expiration UI', () => {
   it('shows login link and requiresLogin state after 403 in prediction request', async () => {
     await assertSessionExpiredFlow(403);
   });
+
+  it('shows transient prediction failure on network error without forcing login', async () => {
+    predictionServiceMock.predict.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 0, statusText: 'Network Error' }))
+    );
+
+    const fixture = await createReadyFixture();
+    const component = fixture.componentInstance;
+
+    component.predictionForm.controls.matchIndex.setValue('0');
+    component.onSubmit();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.requiresLogin).toBe(false);
+    expect(component.predictionError).toBe('Prediction request failed. Please try again in a moment.');
+
+    const loginLink = fixture.nativeElement.querySelector('a.login-link');
+    expect(loginLink).toBeNull();
+  });
 });
