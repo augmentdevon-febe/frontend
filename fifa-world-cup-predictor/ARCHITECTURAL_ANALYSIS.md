@@ -378,56 +378,68 @@ sequenceDiagram
 
 ### 6.1 Arquitectura por componentes standalone
 Decisión: usar componentes standalone para reducir boilerplate y simplificar la creación de vistas.
+
 Ventajas:
 - arranque rápido del proyecto;
 - menos configuración repetida que con NgModules;
 - fit natural para un MVP de una sola feature.
+
 Riesgos:
 - el sistema podría crecer en complejidad sin un criterio claro de organización y composición;
 - el acoplamiento entre componente y lógica de UI puede crecer.
 
 ### 6.2 Separación de responsabilidades en servicios inyectables
 Decisión: encapsular llamadas HTTP en AuthService, MatchesService y PredictionService.
+
 Ventajas:
 - desacopla la vista de la integración con el backend;
 - facilita cambios de contrato o endpoint;
 - deja al componente enfocado en interacción y render.
+
 Riesgos:
 - se mantiene lógica de negocio ligera en el componente;
 - no existe aún una capa de use cases o state management explícito.
 
 ### 6.3 Routing simple basado en páginas
 Decisión: definir rutas explícitas para /login y /predict, con redirecciones generales al login.
+
 Ventajas:
 - navegación fácil de entender;
 - bajo costo de implementación;
 - compatible con un producto orientado a una experiencia lineal.
+
 Riesgos:
 - no hay guards de ruta ni protección declarativa de /predict;
 - la aplicación asume que la sesión ya se valida en la vista.
 
 ### 6.4 Autenticación basada en cookies y credenciales del navegador
 Decisión: usar requests con withCredentials: true para que las cookies de sesión se envíen al backend.
+
 Ventajas:
 - coincide con la estrategia del backend para sesiones de navegador;
 - evita necesidad de token en memoria en este MVP.
+
 Riesgos:
 - implica mayor sensibilidad a CORS, SameSite y política de cookies del navegador;
 - cualquier cambio en la política de cookies puede romper todo el flujo.
 
 ### 6.5 Estado local y reactividad en el componente
 Decisión: mantener estado de formulario, loading, mensaje de error y resultado en PredictionComponent y LoginComponent.
+
 Ventajas:
 - implementación sencilla y directa;
 - adecuado para una sola pantalla y un flujo corto.
+
 Riesgos:
 - escalado deficiente si se agregan más pantallas, estados compartidos o más reglas de negocio.
 
 ### 6.6 Configuración dinámica de base URL para entornos
 Decisión: usar buildApiUrl() plus public/app-config.js para ajustar la URL del backend según el entorno.
+
 Ventajas:
 - favorece despliegues en local y en producción sin tocar el código fuente;
 - reduce el acoplamiento con un host estático.
+
 Riesgos:
 - la estrategia depende de que la variable runtime exista en el proceso de build;
 - la resolución se hace de forma manual y no se centraliza en un interceptor HTTP.
