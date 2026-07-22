@@ -1,4 +1,4 @@
-# Arquitectura del proyecto FIFA World Cup Predictor
+# Arquitectura del proyecto World Soccer Predictor
 
 ## 1. Resumen ejecutivo
 

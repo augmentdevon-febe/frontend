@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "fifa-world-cup-predictor": {
+    "world-soccer-predictor": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -65,10 +65,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "fifa-world-cup-predictor:build:production"
+              "buildTarget": "world-soccer-predictor:build:production"
             },
             "development": {
-              "buildTarget": "fifa-world-cup-predictor:build:development"
+              "buildTarget": "world-soccer-predictor:build:development"
             }
           },
           "defaultConfiguration": "development"

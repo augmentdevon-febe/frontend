@@ -1,4 +1,4 @@
-# FifaWorldCupPredictor
+# WorldSoccerPredictor
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.3.
 
@@ -162,7 +162,7 @@ This repository now includes a Render Blueprint file: `render.yaml`.
 The blueprint already configures:
 
 - Static site build command with runtime `app-config.js` injection.
-- Publish directory `dist/fifa-world-cup-predictor/browser`.
+- Publish directory `dist/world-soccer-predictor/browser`.
 - SPA rewrite rule (`/*` -> `/index.html`) for Angular routes.
 
 ### 1) Deploy backend first (Render Web Service)
@@ -191,7 +191,7 @@ npm install && echo "window.__APP_CONFIG__={API_BASE_URL:'$API_BASE_URL'};" > pu
 	- Publish Directory:
 
 ```bash
-dist/fifa-world-cup-predictor/browser
+dist/world-soccer-predictor/browser
 ```
 
 4. Deploy.

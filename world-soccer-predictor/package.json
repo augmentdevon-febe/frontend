@@ -1,5 +1,5 @@
 {
-  "name": "fifa-world-cup-predictor",
+  "name": "world-soccer-predictor",
   "version": "0.0.0",
   "engines": {
     "node": ">=24.15.0 <25"
