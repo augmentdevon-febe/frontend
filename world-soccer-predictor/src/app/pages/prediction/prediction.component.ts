@@ -255,6 +255,12 @@ export class PredictionComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const navigateToLogin = () => {
+      this.isAuthenticated = false;
+      this.requiresLogin = true;
+      this.router.navigate(['/login']);
+    };
+
     this.isLoggingOut = true;
     this.authService
       .logout()
@@ -267,10 +273,10 @@ export class PredictionComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          this.authService.startGoogleLogin();
+          navigateToLogin();
         },
         error: () => {
-          this.authService.startGoogleLogin();
+          navigateToLogin();
         }
       });
   }
