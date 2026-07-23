@@ -3,9 +3,12 @@
     <h1 class="title">{{ branding.appTitle }}</h1>
     <p class="subtitle">{{ branding.loginSubtitle }}</p>
 
-    <div class="row">
+    <div class="row login-actions">
       <button type="button" mat-raised-button color="accent" (click)="startLogin()" [disabled]="isLoginInProgress">
         Login with Google
+      </button>
+      <button type="button" mat-stroked-button color="accent" (click)="startSwitchAccount()" [disabled]="isLoginInProgress">
+        Use a different Google account
       </button>
       <mat-spinner diameter="28" *ngIf="isCheckingSession || isLoginInProgress"></mat-spinner>
     </div>

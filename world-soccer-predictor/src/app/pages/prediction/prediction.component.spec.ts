@@ -26,7 +26,8 @@ describe('PredictionComponent', () => {
   let authServiceMock: {
     getSession: ReturnType<typeof vi.fn>;
     logout: ReturnType<typeof vi.fn>;
-    startGoogleLogin: ReturnType<typeof vi.fn>;
+    loginWithGoogle: ReturnType<typeof vi.fn>;
+    switchGoogleAccount: ReturnType<typeof vi.fn>;
   };
   let matchesServiceMock: {
     getMatches: ReturnType<typeof vi.fn>;
@@ -45,7 +46,8 @@ describe('PredictionComponent', () => {
     authServiceMock = {
       getSession: vi.fn(),
       logout: vi.fn(),
-      startGoogleLogin: vi.fn()
+      loginWithGoogle: vi.fn(),
+      switchGoogleAccount: vi.fn()
     };
     matchesServiceMock = {
       getMatches: vi.fn()
