@@ -21,14 +21,18 @@ export class AuthService {
   constructor(private readonly http: HttpClient) {}
 
   startGoogleLogin(): void {
-    const loginRedirect = `${window.location.origin}/predict`;
+    window.location.assign(this.buildGoogleLoginUrl());
+  }
+
+  buildGoogleLoginUrl(): string {
+    const loginRedirect = `${window.location.origin}/login`;
     const url = new URL(this.loginUrl, window.location.origin);
 
     url.searchParams.set('redirect_uri', loginRedirect);
     url.searchParams.set('redirectUrl', loginRedirect);
     url.searchParams.set('returnUrl', loginRedirect);
 
-    window.location.assign(url.toString());
+    return url.toString();
   }
 
   getSession(): Observable<AuthSessionResponse> {
