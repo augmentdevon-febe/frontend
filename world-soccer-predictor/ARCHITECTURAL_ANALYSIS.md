@@ -23,7 +23,7 @@ El sistema soporta tres responsabilidades principales:
 - PredictionComponent: vista principal del producto, responsable de verificar auth, desplegar el selector de partidos, enviar predicciones y presentar resultados.
 
 ### 3.3 Servicios de integración y acceso a datos
-- AuthService: encapsula el inicio de login con Google, la comprobación de sesión y el logout, usando llamadas HTTP con credenciales para mantener la sesión del backend.
+- AuthService: encapsula el inicio de login con Google (redirect_uri a /predict), la comprobación de sesión y el logout, usando llamadas HTTP con credenciales para mantener la sesión del backend.
 - MatchesService: encapsula la consulta de partidos desde el backend.
 - PredictionService: encapsula el envío del payload de predicción al backend.
 - buildApiUrl(): helper de infraestructura que resuelve la URL de backend en runtime y en desarrollo local.
@@ -100,7 +100,7 @@ Componentes involucrados:
 Descripción:
 1. El usuario pulsa “Login with Google”.
 2. LoginComponent.startLogin() limpia el estado local y marca el login como en progreso.
-3. AuthService.startGoogleLogin() construye la URL del backend con redirect_uri, redirectUrl y returnUrl apuntando a /predict.
+3. AuthService.loginWithGoogle() construye la URL del backend /api/auth/login con redirect_uri apuntando a /predict.
 4. El navegador ejecuta una redirección completa al endpoint de login externo.
 
 ### Flujo 3 — Verificación de sesión previa
@@ -115,7 +115,8 @@ Descripción:
 1. LoginComponent.ngOnInit() invoca checkSessionAndNavigate(false).
 2. AuthService.getSession() realiza GET /api/auth/session con withCredentials: true.
 3. Si el backend responde con authenticated: true, el componente navega a /predict.
-4. Si el backend retorna 401/403 o no está autenticado, el flujo se mantiene en login y muestra mensaje de login requerido.
+4. Si el backend retorna 401/403 o no está autenticado, el flujo se mantiene en login, muestra mensaje de login requerido y libera el estado de login en progreso para reactivar el botón.
+5. Cuando el usuario regresa con Back desde Google OAuth y el navegador restaura la página desde bfcache (evento pageshow con persisted), el componente resetea isLoginInProgress y vuelve a validar sesión para evitar spinner bloqueante.
 
 ### Flujo 4 — Carga del catálogo de partidos
 Nombre: Carga y filtrado de partidos disponibles
@@ -170,7 +171,7 @@ Componentes involucrados:
 Descripción:
 1. El usuario pulsa “Log off”.
 2. PredictionComponent.logOff() llama a AuthService.logout() con credenciales.
-3. El backend procesa el cierre de sesión y el componente reacciona reiniciando el ciclo de autenticación mediante startGoogleLogin().
+3. El backend procesa el cierre de sesión y el componente navega a /login para reiniciar el ciclo de autenticación desde la pantalla de login.
 
 ### Flujo 8 — Manejo de errores transversales
 Nombre: Gestión de fallos de red, auth y validación de formulario
@@ -184,9 +185,10 @@ Componentes involucrados:
 
 Descripción:
 1. LoginComponent transforma errores de session check en mensajes de usuario específicos para 401/403, 0 y otros casos.
-2. PredictionComponent convierte errores de predicción y carga de matches en mensajes amigables y estados de UI.
-3. En carga de matches, el componente mapea HTTP 400, 401, 403, 429 y 500/503 a mensajes específicos para request inválido, sesión expirada, permisos, rate-limit y servicio no disponible.
-4. El componente centraliza mensajes operativos para no exponer detalles técnicos del backend.
+2. LoginComponent contempla restauraciones desde bfcache para evitar estados visuales atascados (spinner visible + botón deshabilitado).
+3. PredictionComponent convierte errores de predicción y carga de matches en mensajes amigables y estados de UI.
+4. En carga de matches, el componente mapea HTTP 400, 401, 403, 429 y 500/503 a mensajes específicos para request inválido, sesión expirada, permisos, rate-limit y servicio no disponible.
+5. El componente centraliza mensajes operativos para no exponer detalles técnicos del backend.
 
 ### Flujo 9 — Configuración dinámica de runtime para producción
 Nombre: Resolución de URL de backend en runtime
@@ -288,3 +290,11 @@ Riesgos:
 ## 10. Conclusión
 
 La arquitectura actual es simple, funcional y suficiente para un MVP. Está organizada en componentes standalone, servicios inyectables y modelos de dominio, con un flujo de usuario claro para autenticación, carga de partidos y predicción. Sin embargo, la solución está todavía muy cerca del producto y no ha incorporado mecanismos de protección, observabilidad o escalado que serían esperables en una evolución posterior.
+
+## 11. Cambios recientes aplicados
+
+1. AuthService ahora usa loginWithGoogle() como entrada de OAuth y construye la URL de /api/auth/login con redirect_uri a /predict.
+2. Se eliminó del frontend la acción secundaria "Use a different Google account" y su lógica asociada; el login expone un único CTA.
+3. El flujo de logout en PredictionComponent se consolidó para regresar a /login en éxito o error.
+4. Se corrigió un bug de UX al volver con Back desde Google OAuth: LoginComponent ahora maneja pageshow persistido (bfcache) y resetea estado de login en progreso.
+5. Se agregaron/ajustaron pruebas unitarias enfocadas para AuthService y LoginComponent para cubrir redirecciones OAuth y el caso de estado atascado en login.
