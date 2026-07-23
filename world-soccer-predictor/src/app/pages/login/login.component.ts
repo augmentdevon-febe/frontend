@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -15,7 +15,7 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrl: './login.component.css'
 })
 // Handles same-tab Google login redirect, session checks, and navigation to prediction page.
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   readonly branding = appProperties;
   isCheckingSession = false;
   isLoginInProgress = false;
@@ -43,6 +43,17 @@ export class LoginComponent implements OnInit {
 
   // Performs an initial session check on page load to skip login when already authenticated.
   ngOnInit(): void {
+    this.checkSessionAndNavigate(false);
+  }
+
+  // Handles browser back-forward cache restores after leaving for Google OAuth.
+  @HostListener('window:pageshow', ['$event'])
+  onPageShow(event: PageTransitionEvent): void {
+    if (!event.persisted) {
+      return;
+    }
+
+    this.isLoginInProgress = false;
     this.checkSessionAndNavigate(false);
   }
 
@@ -89,9 +100,8 @@ export class LoginComponent implements OnInit {
           return;
         }
 
-        if (!this.isLoginInProgress) {
-          this.loginError = this.pageMessages[this.messageIndex.loginRequired];
-        }
+        this.isLoginInProgress = false;
+        this.loginError = this.pageMessages[this.messageIndex.loginRequired];
       },
       error: (error: unknown) => {
         // Handle specific HTTP errors that indicate unauthenticated state without showing generic error messages.  
