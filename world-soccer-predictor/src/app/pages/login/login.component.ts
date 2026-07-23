@@ -58,12 +58,6 @@ export class LoginComponent implements OnInit {
     this.authService.loginWithGoogle();
   }
 
-  startSwitchAccount(): void {
-    this.loginError = '';
-    this.isLoginInProgress = true;
-    this.authService.switchGoogleAccount();
-  }
-
   // Queries backend session state and routes to prediction page when authenticated.
   private checkSessionAndNavigate(showLoading: boolean): void {
     if (this.isSessionRequestInFlight) {

@@ -15,7 +15,6 @@ export interface AuthSessionResponse {
 })
 export class AuthService {
   private readonly loginUrl = buildApiUrl('/api/auth/login');
-  private readonly switchAccountUrl = buildApiUrl('/api/auth/switch-account');
   private readonly sessionUrl = buildApiUrl('/api/auth/session');
   private readonly logoutUrl = buildApiUrl('/api/auth/logout');
 
@@ -28,19 +27,6 @@ export class AuthService {
   buildGoogleLoginUrl(): string {
     const loginRedirect = this.buildPredictRedirectUrl();
     const url = new URL(this.loginUrl, window.location.origin);
-
-    url.searchParams.set('redirect_uri', loginRedirect);
-
-    return url.toString();
-  }
-
-  switchGoogleAccount(): void {
-    window.location.assign(this.buildSwitchGoogleAccountUrl());
-  }
-
-  buildSwitchGoogleAccountUrl(): string {
-    const loginRedirect = this.buildPredictRedirectUrl();
-    const url = new URL(this.switchAccountUrl, window.location.origin);
 
     url.searchParams.set('redirect_uri', loginRedirect);
 

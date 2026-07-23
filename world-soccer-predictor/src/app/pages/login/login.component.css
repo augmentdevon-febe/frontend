@@ -4,7 +4,6 @@
 
 .login-actions {
   gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 mat-spinner {

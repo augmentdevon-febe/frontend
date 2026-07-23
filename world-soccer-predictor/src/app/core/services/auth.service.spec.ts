@@ -25,12 +25,4 @@ describe('AuthService', () => {
     expect(redirectUrl.pathname).toBe('/api/auth/login');
     expect(redirectUrl.searchParams.get('redirect_uri')).toBe(expectedReturnUrl);
   });
-
-  it('builds a switch-account URL that returns to the predict page', () => {
-    const redirectUrl = new URL(service.buildSwitchGoogleAccountUrl());
-    const expectedReturnUrl = `${window.location.origin}/predict`;
-
-    expect(redirectUrl.pathname).toBe('/api/auth/switch-account');
-    expect(redirectUrl.searchParams.get('redirect_uri')).toBe(expectedReturnUrl);
-  });
 });
