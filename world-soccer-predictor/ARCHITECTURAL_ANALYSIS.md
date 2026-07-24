@@ -1,4 +1,4 @@
-# Arquitectura del proyecto World Soccer Predictor
+# Arquitectura del proyecto World Soccer Predictor Frontend
 
 ## 1. Resumen ejecutivo
 
